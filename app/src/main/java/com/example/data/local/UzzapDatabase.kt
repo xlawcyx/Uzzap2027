@@ -97,54 +97,53 @@ abstract class UzzapDatabase : RoomDatabase() {
                 )
             }
 
-            // 2. Check if chatrooms need population or migration from old mock data
+            // 2. Migrate old mock data, then upsert the current official region catalog.
+            // Existing join state and custom rooms are preserved.
             val roomCount = chatroomDao.getChatroomCount()
             val hasOldLobby = chatroomDao.getChatroomById("room_lobby") != null
+            val isFreshCatalog = roomCount == 0 || hasOldLobby
 
-            if (roomCount == 0 || hasOldLobby) {
-                // If old mock rooms existed, clear them out
-                if (hasOldLobby) {
-                    chatroomDao.deleteAllChatrooms()
-                }
-
-                // Populate real Philippine Provinces categorized by Region
-                val now = System.currentTimeMillis()
-                val rooms = mutableListOf<ChatroomEntity>()
-                val initialNotices = mutableListOf<RoomMessageEntity>()
-
-                PhilippineRegions.PROVINCES.forEachIndexed { index, province ->
-                    val roomId = "room_${province.name.lowercase().replace(" ", "_").replace("'", "")}"
-                    val isFirstJoined = index == 0 // Default join the capital/first room
-
-                    rooms.add(
-                        ChatroomEntity(
-                            id = roomId,
-                            name = province.roomTag,
-                            topic = province.topic,
-                            category = province.region,
-                            chatterCount = if (isFirstJoined) 1 else 0,
-                            isJoined = isFirstJoined,
-                            userRole = if (isFirstJoined) RoomRole.MEMBER else RoomRole.GUEST
-                        )
-                    )
-
-                    // Welcome notice for the room
-                    initialNotices.add(
-                        RoomMessageEntity(
-                            id = "rm_welcome_$roomId",
-                            roomId = roomId,
-                            senderUsername = "System",
-                            senderRole = RoomRole.ADMIN,
-                            message = "Mabuhay! Maligayang pagdating sa opisyal na ${province.roomTag} chatroom ng ${province.region}. ${province.topic}",
-                            timestamp = now - (index * 1000L),
-                            isSystem = true
-                        )
-                    )
-                }
-
-                chatroomDao.insertAll(rooms)
-                chatroomDao.insertAllRoomMessages(initialNotices)
+            if (hasOldLobby) {
+                chatroomDao.deleteAllChatrooms()
             }
+
+            val now = System.currentTimeMillis()
+            val rooms = mutableListOf<ChatroomEntity>()
+            val initialNotices = mutableListOf<RoomMessageEntity>()
+
+            PhilippineRegions.PROVINCES.forEachIndexed { index, province ->
+                val roomId = province.roomId
+                val existingRoom = chatroomDao.getChatroomById(roomId)
+                val isFirstJoined = isFreshCatalog && index == 0
+
+                rooms.add(
+                    ChatroomEntity(
+                        id = roomId,
+                        name = province.roomTag,
+                        topic = province.topic,
+                        category = province.region,
+                        chatterCount = existingRoom?.chatterCount ?: if (isFirstJoined) 1 else 0,
+                        isJoined = existingRoom?.isJoined ?: isFirstJoined,
+                        userRole = existingRoom?.userRole
+                            ?: if (isFirstJoined) RoomRole.MEMBER else RoomRole.GUEST
+                    )
+                )
+
+                initialNotices.add(
+                    RoomMessageEntity(
+                        id = "rm_welcome_$roomId",
+                        roomId = roomId,
+                        senderUsername = "System",
+                        senderRole = RoomRole.ADMIN,
+                        message = "Mabuhay! Maligayang pagdating sa opisyal na ${province.roomTag} chatroom ng ${province.region}. ${province.topic}",
+                        timestamp = now - (index * 1000L),
+                        isSystem = true
+                    )
+                )
+            }
+
+            chatroomDao.insertAll(rooms)
+            chatroomDao.insertAllRoomMessages(initialNotices)
         }
     }
 }
