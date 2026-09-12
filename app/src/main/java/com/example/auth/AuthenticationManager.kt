@@ -8,6 +8,7 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.gms.tasks.Task
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -149,6 +150,9 @@ class AuthenticationManager(
         } catch (e: GetCredentialCancellationException) {
             Log.d(TAG, "Google Sign-In cancelled by user.")
             AuthResultState.Cancelled
+        } catch (e: NoCredentialException) {
+            Log.d(TAG, "No Google credential is available for sign-in.")
+            AuthResultState.Error("No Google account is available for sign-in.", e)
         } catch (e: GoogleIdTokenParsingException) {
             Log.e(TAG, "Failed to parse Google ID token", e)
             AuthResultState.Error("Invalid Google ID token response.", e)
@@ -158,24 +162,6 @@ class AuthenticationManager(
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error during Google Sign-In", e)
             AuthResultState.Error(e.localizedMessage ?: "Authentication failed.", e)
-        }
-    }
-
-    /**
-     * Signs in anonymously to Firebase Auth (useful for guest or quick preview sessions).
-     */
-    suspend fun signInAnonymously(): AuthResultState {
-        return try {
-            val authResult = auth.signInAnonymously().awaitResult()
-            val user = authResult.user
-            if (user != null) {
-                AuthResultState.Success(user)
-            } else {
-                AuthResultState.Error("Failed to authenticate anonymously.")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Anonymous sign-in failed", e)
-            AuthResultState.Error(e.localizedMessage ?: "Anonymous sign-in failed.", e)
         }
     }
 

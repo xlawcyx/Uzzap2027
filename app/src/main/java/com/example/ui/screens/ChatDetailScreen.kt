@@ -16,6 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -30,7 +31,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -79,6 +79,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -86,7 +87,10 @@ import com.example.data.model.ConversationEntity
 import com.example.data.model.MessageDeliveryStatus
 import com.example.data.model.MessageEntity
 import com.example.data.model.MessageType
+import com.example.ui.components.ClassicEmoticonMessage
+import com.example.ui.components.ClassicEmoticonPicker
 import com.example.ui.components.UzzapAvatar
+import com.example.ui.components.appendClassicEmoticon
 import com.example.ui.theme.UzzapOrange
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -150,8 +154,6 @@ fun ChatDetailScreen(
         }
     }
 
-    val emoticons = listOf(":-)", ":-D", ";-)", ":-P", "B-)", "<3", "(y)", "\uD83C\uDF89", "\u26A1", "\uD83D\uDD25")
-
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -196,12 +198,15 @@ fun ChatDetailScreen(
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = "@${conversation.recipientUsername} • Uzzap Mobile",
                                 fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
@@ -305,28 +310,12 @@ fun ChatDetailScreen(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    LazyRow(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(emoticons) { emo ->
-                            Surface(
-                                onClick = {
-                                    inputText += " $emo "
-                                    showEmoticons = false
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                modifier = Modifier.padding(2.dp)
-                            ) {
-                                Text(
-                                    text = emo,
-                                    fontSize = 16.sp,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                )
-                            }
-                        }
-                    }
+                    ClassicEmoticonPicker(
+                        onEmoticonSelected = { emoticon ->
+                            inputText = appendClassicEmoticon(inputText, emoticon.token)
+                        },
+                        modifier = Modifier.testTag("chat_emoticon_picker")
+                    )
                 }
             }
 
@@ -393,88 +382,97 @@ fun ChatDetailScreen(
                     .animateContentSize(tween(180, easing = FastOutSlowInEasing))
                     .imePadding()
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Emoticon Toggle
-                    IconButton(
-                        onClick = { showEmoticons = !showEmoticons },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.EmojiEmotions,
-                            contentDescription = "Emoticons",
-                            tint = if (showEmoticons) UzzapOrange else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    // Buzz composer action
-                    IconButton(
-                        onClick = onSendBuzz,
+                BoxWithConstraints {
+                    val showComposerBuzz = maxWidth >= 400.dp
+                    Row(
                         modifier = Modifier
-                            .size(48.dp)
-                            .testTag("composer_buzz_button")
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ElectricBolt,
-                            contentDescription = "Buzz",
-                            tint = UzzapOrange
-                        )
-                    }
-
-                    // Text Input
-                    OutlinedTextField(
-                        value = inputText,
-                        onValueChange = { inputText = it },
-                        placeholder = {
-                            Text(
-                                text = "Uzzap message...",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        // Emoticon Toggle
+                        IconButton(
+                            onClick = { showEmoticons = !showEmoticons },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.EmojiEmotions,
+                                contentDescription = "Emoticons",
+                                tint = if (showEmoticons) UzzapOrange else MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        },
-                        maxLines = 4,
-                        shape = RoundedCornerShape(24.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = UzzapOrange,
-                            unfocusedBorderColor = Color.Transparent,
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 4.dp)
-                            .testTag("message_input")
-                    )
+                        }
 
-                    // Send Button
-                    IconButton(
-                        onClick = {
-                            if (inputText.isNotBlank()) {
-                                onSendMessage(inputText.trim(), replyToMessage?.body)
-                                inputText = ""
-                                replyToMessage = null
+                        // BUZZ remains in the top bar; keep the duplicate shortcut only
+                        // when there is enough width for a comfortable text field.
+                        if (showComposerBuzz) {
+                            IconButton(
+                                onClick = onSendBuzz,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .testTag("composer_buzz_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ElectricBolt,
+                                    contentDescription = "Buzz",
+                                    tint = UzzapOrange
+                                )
                             }
-                        },
-                        enabled = inputText.isNotBlank(),
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(if (inputText.isNotBlank()) UzzapOrange else Color.LightGray)
-                            .testTag("send_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(18.dp)
+                        }
+
+                        // Text Input
+                        OutlinedTextField(
+                            value = inputText,
+                            onValueChange = { inputText = it },
+                            placeholder = {
+                                Text(
+                                    text = "Uzzap message...",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            },
+                            maxLines = 4,
+                            shape = RoundedCornerShape(24.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = UzzapOrange,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 4.dp)
+                                .testTag("message_input")
                         )
+
+                        // Send Button
+                        IconButton(
+                            onClick = {
+                                if (inputText.isNotBlank()) {
+                                    onSendMessage(inputText.trim(), replyToMessage?.body)
+                                    inputText = ""
+                                    replyToMessage = null
+                                    showEmoticons = false
+                                }
+                            },
+                            enabled = inputText.isNotBlank(),
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(if (inputText.isNotBlank()) UzzapOrange else Color.LightGray)
+                                .testTag("send_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Send",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -760,12 +758,11 @@ fun MessageBubble(
                     }
                 }
 
-                // Message text
-                Text(
-                    text = message.body,
-                    fontSize = 14.sp,
+                // Message text and bundled classic emoticons
+                ClassicEmoticonMessage(
+                    message = message.body,
                     color = textColor,
-                    lineHeight = 19.sp
+                    lineHeight = 24.sp
                 )
 
                 Spacer(modifier = Modifier.height(3.dp))

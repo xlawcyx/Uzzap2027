@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
@@ -68,11 +70,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.ChatroomEntity
 import com.example.data.model.RoomMessageEntity
 import com.example.data.model.RoomRole
+import com.example.ui.components.ClassicEmoticonMessage
+import com.example.ui.components.ClassicEmoticonPicker
+import com.example.ui.components.appendClassicEmoticon
 import com.example.ui.theme.UzzapOrange
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -89,6 +95,7 @@ fun RoomDetailScreen(
     onReportRoom: ((String, String, String) -> Unit)? = null
 ) {
     var inputText by remember { mutableStateOf("") }
+    var showEmoticons by remember { mutableStateOf(false) }
     var showRoomMenu by remember { mutableStateOf(false) }
     var showReportRoomDialog by remember { mutableStateOf(false) }
     var reportRoomReason by remember { mutableStateOf("Inappropriate Content") }
@@ -165,13 +172,17 @@ fun RoomDetailScreen(
                         text = room?.name ?: "Chatroom",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = "${room?.chatterCount ?: 0} online • ${room?.category ?: ""}",
                         fontSize = 11.sp,
                         color = Color(0xFF10B981),
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -338,8 +349,57 @@ fun RoomDetailScreen(
             contentPadding = PaddingValues(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            if (messages.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 40.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Group,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                            modifier = Modifier.size(34.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Start the conversation",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Say hello or send a classic Uzzap emoticon.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+                        )
+                    }
+                }
+            }
             items(messages, key = { it.id }) { msg ->
                 RoomMessageItem(msg)
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showEmoticons,
+            enter = fadeIn(tween(180)) +
+                expandVertically(tween(220, easing = FastOutSlowInEasing)),
+            exit = fadeOut(tween(140)) +
+                shrinkVertically(tween(180, easing = FastOutSlowInEasing))
+        ) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                ClassicEmoticonPicker(
+                    onEmoticonSelected = { emoticon ->
+                        inputText = appendClassicEmoticon(inputText, emoticon.token)
+                    },
+                    modifier = Modifier.testTag("room_emoticon_picker")
+                )
             }
         }
 
@@ -358,13 +418,32 @@ fun RoomDetailScreen(
                     .padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(
+                    onClick = { showEmoticons = !showEmoticons },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .testTag("room_emoticon_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEmotions,
+                        contentDescription = "Classic emoticons",
+                        tint = if (showEmoticons) {
+                            UzzapOrange
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+
                 OutlinedTextField(
                     value = inputText,
                     onValueChange = { inputText = it },
                     placeholder = {
                         Text(
                             text = "Chat in ${room?.name ?: "room"}...",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     },
                     maxLines = 3,
@@ -393,6 +472,7 @@ fun RoomDetailScreen(
                             }
                             onSendMessage(inputText.trim())
                             inputText = ""
+                            showEmoticons = false
                         }
                     },
                     enabled = inputText.isNotBlank(),
@@ -662,13 +742,18 @@ fun RoomMessageItem(
                 1.dp,
                 MaterialTheme.colorScheme.outlineVariant
             ),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            shape = RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 16.dp,
+                bottomStart = if (isMe) 16.dp else 4.dp,
+                bottomEnd = if (isMe) 4.dp else 16.dp
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            modifier = Modifier.widthIn(max = 290.dp)
         ) {
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                Text(
-                    text = message.message,
-                    fontSize = 14.sp,
+                ClassicEmoticonMessage(
+                    message = message.message,
                     color = textColor
                 )
                 Spacer(modifier = Modifier.height(2.dp))

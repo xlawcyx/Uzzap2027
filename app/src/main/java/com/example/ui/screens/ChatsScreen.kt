@@ -61,10 +61,17 @@ fun ChatsScreen(
         modifier = modifier.fillMaxSize()
     ) {
         if (conversations.isEmpty()) {
-            EmptyListState(
-                title = "No Active Chats",
-                subtitle = "Start chatting with your buddies from the Buddies tab!"
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 88.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                EmptyListState(
+                    title = "No Active Chats",
+                    subtitle = "Start chatting with your buddies from the Buddies tab!"
+                )
+            }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),

@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="app/src/main/res/drawable/ic_uzzap_logo.jpg" alt="Uzzap logo" width="128" />
+  <img src="app/src/main/res/drawable-nodpi/ic_uzzap_logo.jpg" alt="Uzzap logo" width="128" />
   <h1>Uzzap</h1>
   <p><strong>A modern Android instant messenger for conversations, communities, and connections.</strong></p>
   <p>
@@ -53,6 +53,21 @@ Firebase-backed sign-in and messaging need an Android Firebase project:
 2. Download the project's `google-services.json`.
 3. Place it at `app/google-services.json`.
 4. Enable Authentication and Cloud Firestore.
+
+Enable the Firebase Authentication **Email/Password** provider. Uzzap maps normalized usernames
+to internal Firebase Auth email identifiers; passwords are handled by Firebase Authentication and
+must never be stored in Firestore.
+
+Before deploying [`firestore.rules`](firestore.rules) over an existing project, migrate legacy
+accounts with an administrator-controlled script:
+
+- create a Firebase Authentication user for each account;
+- add its `authUid` to the private `users/{username}` record;
+- copy only public presence fields into `public_profiles/{username}`;
+- remove the legacy `password` field from Firestore.
+
+The checked-in rules intentionally deny legacy records without ownership metadata. Do not weaken
+the rules to perform this migration from an Android client.
 
 > [!IMPORTANT]
 > Keep `google-services.json` and production credentials out of version control. The debug APK compiles without this file, but Firebase features will not work correctly at runtime.

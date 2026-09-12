@@ -61,10 +61,6 @@ class UzzapRepository(
     val conversationsFlow: Flow<List<ConversationEntity>> = conversationDao.getAllConversationsFlow()
     val chatroomsFlow: Flow<List<ChatroomEntity>> = chatroomDao.getAllChatroomsFlow()
 
-    init {
-        initCloudSync()
-    }
-
     fun initCloudSync() {
         scope.launch(Dispatchers.IO) {
             configureCloudSync()
@@ -471,8 +467,12 @@ class UzzapRepository(
         val myProfile = userDao.getProfile()
         val myUsername = myProfile?.username
         if (myUsername != null) {
-            firestoreService.deleteUserCloudData(myUsername)
+            firestoreService.deleteUserCloudData(myUsername).getOrThrow()
         }
         database.clearAllTables()
+    }
+
+    fun close() {
+        firestoreService.cleanUp()
     }
 }

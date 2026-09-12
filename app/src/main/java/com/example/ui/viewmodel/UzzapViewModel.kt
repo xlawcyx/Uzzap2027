@@ -2,6 +2,7 @@ package com.example.ui.viewmodel
 
 import android.app.Application
 import android.content.Context
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.auth.AuthenticationManager
@@ -42,7 +43,9 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
 
     // Session / Auth state
     private val prefs = application.getSharedPreferences("uzzap_session", Context.MODE_PRIVATE)
-    private val _isLoggedIn = MutableStateFlow(prefs.getBoolean("is_logged_in", true))
+    private val _isLoggedIn = MutableStateFlow(
+        prefs.getBoolean("is_logged_in", false) && AuthenticationManager.getInstance().isUserSignedIn()
+    )
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
     // Current navigation state
@@ -140,6 +143,9 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        if (_isLoggedIn.value) {
+            repository.initCloudSync()
+        }
         // Collect buzz events to trigger vibration/screen shake
         viewModelScope.launch {
             repository.buzzEvents.collect {
@@ -244,27 +250,27 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateNotificationSetting(enabled: Boolean) {
         _notificationsEnabled.value = enabled
-        settingsPrefs.edit().putBoolean("notifications_enabled", enabled).apply()
+        settingsPrefs.edit { putBoolean("notifications_enabled", enabled) }
     }
 
     fun updateSoundSetting(enabled: Boolean) {
         _soundEffectsEnabled.value = enabled
-        settingsPrefs.edit().putBoolean("sound_effects_enabled", enabled).apply()
+        settingsPrefs.edit { putBoolean("sound_effects_enabled", enabled) }
     }
 
     fun updateEnterKeySends(enabled: Boolean) {
         _enterKeySends.value = enabled
-        settingsPrefs.edit().putBoolean("enter_key_sends", enabled).apply()
+        settingsPrefs.edit { putBoolean("enter_key_sends", enabled) }
     }
 
     fun updateCloudPresenceSync(enabled: Boolean) {
         _cloudPresenceSync.value = enabled
-        settingsPrefs.edit().putBoolean("cloud_presence_sync", enabled).apply()
+        settingsPrefs.edit { putBoolean("cloud_presence_sync", enabled) }
     }
 
     fun updateAutoSaveHistory(enabled: Boolean) {
         _autoSaveHistory.value = enabled
-        settingsPrefs.edit().putBoolean("auto_save_history", enabled).apply()
+        settingsPrefs.edit { putBoolean("auto_save_history", enabled) }
     }
 
     fun updateFullProfile(
@@ -352,7 +358,7 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun logout(context: Context? = null) {
         viewModelScope.launch {
-            prefs.edit().putBoolean("is_logged_in", false).apply()
+            prefs.edit { putBoolean("is_logged_in", false) }
             repository.updatePresence(UserPresence.OFFLINE, "Offline - Logged out")
             try {
                 AuthenticationManager.getInstance().signOut(context ?: getApplication())
@@ -385,7 +391,7 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
             _authError.value = null
             val result = repository.signIn(usernameOrPhone, pin)
             if (result.isSuccess) {
-                prefs.edit().putBoolean("is_logged_in", true).apply()
+                prefs.edit { putBoolean("is_logged_in", true) }
                 _isLoggedIn.value = true
                 _currentTab.value = MainTab.BUDDIES
                 _authError.value = null
@@ -416,7 +422,7 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
                 statusMessage = statusMessage
             )
             if (result.isSuccess) {
-                prefs.edit().putBoolean("is_logged_in", true).apply()
+                prefs.edit { putBoolean("is_logged_in", true) }
                 _isLoggedIn.value = true
                 _currentTab.value = MainTab.BUDDIES
                 _authError.value = null
@@ -425,13 +431,6 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
             }
             _authLoading.value = false
         }
-    }
-
-    /**
-     * Signs the user back in, restoring their status to ONLINE and resetting to the Buddies tab.
-     */
-    fun login(username: String = "juandelacruz", displayName: String = "Juan Dela Cruz") {
-        signIn(username, "")
     }
 
     fun submitReport(target: String, reason: String, details: String) {
@@ -456,8 +455,8 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 repository.deleteAccountData()
-                prefs.edit().clear().apply()
-                settingsPrefs.edit().clear().apply()
+                prefs.edit { clear() }
+                settingsPrefs.edit { clear() }
                 _isLoggedIn.value = false
                 _currentTab.value = MainTab.BUDDIES
                 _activeConversationId.value = null
@@ -466,5 +465,10 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
                 android.util.Log.e("UzzapViewModel", "Error deleting account", e)
             }
         }
+    }
+
+    override fun onCleared() {
+        repository.close()
+        super.onCleared()
     }
 }

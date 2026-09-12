@@ -48,7 +48,7 @@ abstract class UzzapDatabase : RoomDatabase() {
                     UzzapDatabase::class.java,
                     "uzzap_database"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .addCallback(UzzapDatabaseCallback(scope))
                     .build()
                 INSTANCE = instance

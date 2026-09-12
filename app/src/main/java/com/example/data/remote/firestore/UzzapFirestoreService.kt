@@ -12,6 +12,8 @@ import com.example.data.model.RoomMessageEntity
 import com.example.data.model.RoomRole
 import com.example.data.model.UserPresence
 import com.example.data.model.UserProfileEntity
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
@@ -27,6 +29,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.Locale
+
+internal const val MIN_PASSWORD_LENGTH = 6
+private const val AUTH_EMAIL_DOMAIN = "accounts.uzzap.app"
+
+internal fun normalizeUsername(username: String): String =
+    username.trim().lowercase(Locale.ROOT).removePrefix("@")
+
+internal fun authEmailForUsername(username: String): String =
+    "${normalizeUsername(username)}@$AUTH_EMAIL_DOMAIN"
 
 enum class FirestoreSyncStatus(val label: String) {
     INITIALIZING("Connecting to Cloud..."),
@@ -42,6 +54,7 @@ class UzzapFirestoreService(
     companion object {
         private const val TAG = "UzzapFirestore"
         private const val USERS_COLLECTION = "users"
+        private const val PUBLIC_PROFILES_COLLECTION = "public_profiles"
         private const val CHATROOMS_COLLECTION = "chatrooms"
         private const val ROOM_MESSAGES_SUBCOLLECTION = "messages"
         private const val CONVERSATIONS_COLLECTION = "conversations"
@@ -63,6 +76,8 @@ class UzzapFirestoreService(
             FirebaseFirestore.getInstance()
         }
     }
+
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     private val _syncStatus = MutableStateFlow(FirestoreSyncStatus.INITIALIZING)
     val syncStatus: StateFlow<FirestoreSyncStatus> = _syncStatus.asStateFlow()
@@ -106,73 +121,91 @@ class UzzapFirestoreService(
         avatarEmoji: String,
         statusMessage: String
     ): Result<UserProfileEntity> {
-        val cleanUsername = username.trim().lowercase().removePrefix("@")
+        val cleanUsername = normalizeUsername(username)
         if (cleanUsername.length < 3) {
             return Result.failure(IllegalArgumentException("Username must be at least 3 characters."))
         }
         if (!cleanUsername.matches(Regex("^[a-z0-9_.]+$"))) {
             return Result.failure(IllegalArgumentException("Username can only contain letters, numbers, underscores and dots."))
         }
+        if (cleanUsername.length > 32 || cleanUsername.startsWith(".") ||
+            cleanUsername.endsWith(".") || ".." in cleanUsername
+        ) {
+            return Result.failure(IllegalArgumentException("Username format is invalid."))
+        }
         if (displayName.isBlank()) {
             return Result.failure(IllegalArgumentException("Please enter your display name."))
         }
-        if (password.length < 4) {
-            return Result.failure(IllegalArgumentException("PIN / Password must be at least 4 characters."))
+        if (password.length < MIN_PASSWORD_LENGTH) {
+            return Result.failure(
+                IllegalArgumentException("Password must be at least $MIN_PASSWORD_LENGTH characters.")
+            )
         }
 
+        var createdUser: FirebaseUser? = null
         return try {
             val docRef = firestore.collection(USERS_COLLECTION).document(cleanUsername)
-            val existingDoc = try {
-                docRef.get().await()
-            } catch (e: Exception) {
-                null
-            }
-
-            if (existingDoc != null && existingDoc.exists()) {
-                return Result.failure(IllegalStateException("Username '@$cleanUsername' is already taken. Please choose another username or sign in."))
-            }
-
-            // Ensure Firebase Auth session
-            try {
-                val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
-                if (auth.currentUser == null) {
-                    auth.signInAnonymously().await()
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Anonymous auth note: ${e.message}")
-            }
+            val authResult = auth.createUserWithEmailAndPassword(
+                authEmailForUsername(cleanUsername),
+                password
+            ).await()
+            val authUser = authResult.user
+                ?: return Result.failure(IllegalStateException("Firebase did not create an account."))
+            createdUser = authUser
 
             val finalStatusMsg = if (statusMessage.isBlank()) "Chatting on Uzzap \uD83D\uDCF1" else statusMessage.trim()
             val newProfile = UserProfileEntity(
                 id = "me",
                 username = cleanUsername,
                 displayName = displayName.trim(),
-                phoneNumber = phoneNumber.ifBlank { "+63 918 000 0000" }.trim(),
+                phoneNumber = phoneNumber.trim(),
                 status = UserPresence.ONLINE,
                 statusMessage = finalStatusMsg,
                 avatarEmoji = avatarEmoji.ifBlank { "\uD83D\uDE0A" },
-                phoneVerified = true,
+                phoneVerified = false,
                 vibrationEnabled = true
             )
 
             val userData = hashMapOf<String, Any>(
+                "authUid" to authUser.uid,
                 "username" to cleanUsername,
                 "displayName" to displayName.trim(),
                 "phoneNumber" to phoneNumber.trim(),
-                "password" to password,
                 "status" to UserPresence.ONLINE.name,
                 "statusMessage" to finalStatusMsg,
                 "avatarEmoji" to newProfile.avatarEmoji,
-                "phoneVerified" to true,
+                "phoneVerified" to false,
                 "vibrationEnabled" to true,
                 "createdAt" to System.currentTimeMillis()
             )
+            val publicProfileData = hashMapOf<String, Any>(
+                "authUid" to authUser.uid,
+                "username" to cleanUsername,
+                "displayName" to displayName.trim(),
+                "status" to UserPresence.ONLINE.name,
+                "statusMessage" to finalStatusMsg,
+                "avatarEmoji" to newProfile.avatarEmoji,
+                "lastSeen" to FieldValue.serverTimestamp()
+            )
 
-            docRef.set(userData, SetOptions.merge()).await()
+            firestore.batch()
+                .set(docRef, userData)
+                .set(
+                    firestore.collection(PUBLIC_PROFILES_COLLECTION).document(cleanUsername),
+                    publicProfileData
+                )
+                .commit()
+                .await()
+            createdUser = null
             _syncStatus.value = FirestoreSyncStatus.CONNECTED
             Log.d(TAG, "User registered in Firestore: $cleanUsername")
             Result.success(newProfile)
         } catch (e: Exception) {
+            try {
+                createdUser?.delete()?.await()
+            } catch (cleanupError: Exception) {
+                Log.w(TAG, "Could not roll back incomplete Firebase account creation", cleanupError)
+            }
             Log.e(TAG, "Failed signUpWithFirestore: ${e.message}", e)
             Result.failure(e)
         }
@@ -182,56 +215,35 @@ class UzzapFirestoreService(
         usernameOrPhone: String,
         password: String
     ): Result<UserProfileEntity> {
-        val cleanInput = usernameOrPhone.trim().lowercase().removePrefix("@")
+        val cleanInput = normalizeUsername(usernameOrPhone)
         if (cleanInput.isBlank()) {
-            return Result.failure(IllegalArgumentException("Please enter your username or mobile number."))
+            return Result.failure(IllegalArgumentException("Please enter your username."))
+        }
+        if (password.isBlank()) {
+            return Result.failure(IllegalArgumentException("Please enter your password."))
         }
 
         return try {
-            // Ensure Firebase Auth session
-            try {
-                val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
-                if (auth.currentUser == null) {
-                    auth.signInAnonymously().await()
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Anonymous auth note: ${e.message}")
-            }
+            val authResult = auth.signInWithEmailAndPassword(
+                authEmailForUsername(cleanInput),
+                password
+            ).await()
+            val authUser = authResult.user
+                ?: return Result.failure(IllegalStateException("Firebase did not return an authenticated account."))
 
-            // 1. Try fetching by username document ID
             val userDocRef = firestore.collection(USERS_COLLECTION).document(cleanInput)
-            val docSnapshot = try {
-                userDocRef.get().await()
-            } catch (e: Exception) {
-                null
-            }
+            val targetDoc = userDocRef.get().await()
 
-            var targetDoc = if (docSnapshot != null && docSnapshot.exists()) docSnapshot else null
-
-            // 2. If not found by username, try querying by phoneNumber
-            if (targetDoc == null) {
-                val phoneQuery = try {
-                    firestore.collection(USERS_COLLECTION)
-                        .whereEqualTo("phoneNumber", usernameOrPhone.trim())
-                        .limit(1)
-                        .get().await()
-                } catch (e: Exception) {
-                    null
-                }
-                if (phoneQuery != null && !phoneQuery.isEmpty) {
-                    targetDoc = phoneQuery.documents.first()
-                }
-            }
-
-            if (targetDoc != null) {
-                val storedPassword = targetDoc.getString("password")
-                if (!storedPassword.isNullOrBlank() && password.isNotBlank() && storedPassword != password) {
-                    return Result.failure(IllegalArgumentException("Incorrect password or PIN for this account."))
+            if (targetDoc.exists()) {
+                val ownerUid = targetDoc.getString("authUid")
+                if (ownerUid != null && ownerUid != authUser.uid) {
+                    auth.signOut()
+                    return Result.failure(IllegalStateException("The profile does not belong to this account."))
                 }
 
                 val username = targetDoc.getString("username") ?: cleanInput
                 val displayName = targetDoc.getString("displayName") ?: username
-                val phoneNumber = targetDoc.getString("phoneNumber") ?: "+63 918 555 1014"
+                val phoneNumber = targetDoc.getString("phoneNumber") ?: ""
                 val statusMsg = targetDoc.getString("statusMessage") ?: "Chatting on Uzzap \uD83D\uDCF1"
                 val avatarEmoji = targetDoc.getString("avatarEmoji") ?: "\uD83D\uDE0E"
                 val phoneVerified = targetDoc.getBoolean("phoneVerified") ?: true
@@ -249,38 +261,20 @@ class UzzapFirestoreService(
                     vibrationEnabled = vibrationEnabled
                 )
 
-                // Update status in Firestore
-                try {
-                    targetDoc.reference.update(
-                        mapOf(
-                            "status" to UserPresence.ONLINE.name,
-                            "lastSeen" to FieldValue.serverTimestamp()
-                        )
+                targetDoc.reference.update(
+                    mapOf(
+                        "authUid" to authUser.uid,
+                        "status" to UserPresence.ONLINE.name,
+                        "lastSeen" to FieldValue.serverTimestamp()
                     )
-                } catch (e: Exception) {
-                    Log.w(TAG, "Could not update last seen: ${e.message}")
-                }
+                ).await()
                 _syncStatus.value = FirestoreSyncStatus.CONNECTED
                 Result.success(profile)
             } else {
-                // Special check for demo default Juan Dela Cruz
-                if (cleanInput == "juandelacruz" || cleanInput == "juan") {
-                    val defaultProfile = UserProfileEntity(
-                        id = "me",
-                        username = "juandelacruz",
-                        displayName = "Juan Dela Cruz",
-                        phoneNumber = "+63 918 555 1014",
-                        status = UserPresence.ONLINE,
-                        statusMessage = "Chatting on Uzzap v1.0.14 \uD83D\uDCF1",
-                        avatarEmoji = "\uD83D\uDE0E",
-                        phoneVerified = true,
-                        vibrationEnabled = true
-                    )
-                    syncUserProfile(defaultProfile)
-                    Result.success(defaultProfile)
-                } else {
-                    Result.failure(IllegalStateException("No account found for '$usernameOrPhone'. Please check your credentials or switch to Sign Up."))
-                }
+                auth.signOut()
+                Result.failure(
+                    IllegalStateException("No profile found for '@$cleanInput'. Please create an account.")
+                )
             }
         } catch (e: Exception) {
             Log.e(TAG, "signInWithFirestore exception: ${e.message}", e)
@@ -293,6 +287,7 @@ class UzzapFirestoreService(
             try {
                 _syncStatus.value = FirestoreSyncStatus.SYNCING
                 val userData = hashMapOf<String, Any>(
+                    "authUid" to (auth.currentUser?.uid ?: return@launch),
                     "username" to profile.username,
                     "displayName" to profile.displayName,
                     "phoneNumber" to profile.phoneNumber,
@@ -303,10 +298,28 @@ class UzzapFirestoreService(
                     "phoneVerified" to profile.phoneVerified,
                     "vibrationEnabled" to profile.vibrationEnabled
                 )
+                val publicProfileData = hashMapOf<String, Any>(
+                    "authUid" to (auth.currentUser?.uid ?: return@launch),
+                    "username" to profile.username,
+                    "displayName" to profile.displayName,
+                    "status" to profile.status.name,
+                    "statusMessage" to profile.statusMessage,
+                    "avatarEmoji" to profile.avatarEmoji,
+                    "lastSeen" to FieldValue.serverTimestamp()
+                )
 
-                firestore.collection(USERS_COLLECTION)
-                    .document(profile.username)
-                    .set(userData, SetOptions.merge())
+                firestore.batch()
+                    .set(
+                        firestore.collection(USERS_COLLECTION).document(profile.username),
+                        userData,
+                        SetOptions.merge()
+                    )
+                    .set(
+                        firestore.collection(PUBLIC_PROFILES_COLLECTION).document(profile.username),
+                        publicProfileData,
+                        SetOptions.merge()
+                    )
+                    .commit()
                     .addOnSuccessListener {
                         _syncStatus.value = FirestoreSyncStatus.CONNECTED
                         Log.d(TAG, "User profile synced to Firestore: ${profile.username}")
@@ -326,7 +339,7 @@ class UzzapFirestoreService(
     ) {
         presenceListener?.remove()
         try {
-            presenceListener = firestore.collection(USERS_COLLECTION)
+            presenceListener = firestore.collection(PUBLIC_PROFILES_COLLECTION)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
                         Log.w(TAG, "listenToUsersPresence error: ${error.message}")
@@ -358,6 +371,7 @@ class UzzapFirestoreService(
     fun seedInitialRoomsIfEmpty(initialRooms: List<ChatroomEntity>) {
         scope.launch(Dispatchers.IO) {
             try {
+                val creatorUid = auth.currentUser?.uid ?: return@launch
                 val snapshot = firestore.collection(CHATROOMS_COLLECTION).limit(1).get().await()
                 if (snapshot.isEmpty) {
                     Log.d(TAG, "Firestore chatrooms collection is empty. Seeding initial rooms...")
@@ -370,6 +384,7 @@ class UzzapFirestoreService(
                             "topic" to room.topic,
                             "category" to room.category,
                             "chatterCount" to room.chatterCount,
+                            "createdByUid" to creatorUid,
                             "createdAt" to System.currentTimeMillis()
                         )
                         batch.set(docRef, data, SetOptions.merge())
@@ -422,12 +437,14 @@ class UzzapFirestoreService(
     fun createChatroom(room: ChatroomEntity) {
         scope.launch(Dispatchers.IO) {
             try {
+                val creatorUid = auth.currentUser?.uid ?: return@launch
                 val data = hashMapOf<String, Any>(
                     "id" to room.id,
                     "name" to room.name,
                     "topic" to room.topic,
                     "category" to room.category,
                     "chatterCount" to room.chatterCount,
+                    "createdByUid" to creatorUid,
                     "createdAt" to System.currentTimeMillis()
                 )
                 firestore.collection(CHATROOMS_COLLECTION)
@@ -456,10 +473,12 @@ class UzzapFirestoreService(
     fun sendRoomMessage(roomId: String, message: RoomMessageEntity) {
         scope.launch(Dispatchers.IO) {
             try {
+                val senderUid = auth.currentUser?.uid ?: return@launch
                 val data = hashMapOf<String, Any>(
                     "id" to message.id,
                     "roomId" to roomId,
                     "senderUsername" to message.senderUsername,
+                    "senderUid" to senderUid,
                     "senderRole" to message.senderRole.name,
                     "message" to message.message,
                     "timestamp" to message.timestamp,
@@ -542,12 +561,22 @@ class UzzapFirestoreService(
         recipientUsername: String,
         message: MessageEntity
     ): Result<Unit> = try {
+        val senderUid = auth.currentUser?.uid
+            ?: return Result.failure(IllegalStateException("Sign in before sending messages."))
+        val recipientUid = firestore.collection(PUBLIC_PROFILES_COLLECTION)
+            .document(recipientUsername)
+            .get()
+            .await()
+            .getString("authUid")
+            ?: return Result.failure(IllegalStateException("The recipient must sign in again before receiving messages."))
         val msgData = hashMapOf<String, Any>(
             "id" to message.id,
             "conversationId" to conversationId,
             "senderUsername" to message.senderUsername,
             "senderDisplayName" to message.senderDisplayName,
             "recipientUsername" to recipientUsername,
+            "senderUid" to senderUid,
+            "recipientUid" to recipientUid,
             "type" to message.type.name,
             "body" to message.body,
             "timestamp" to message.timestamp,
@@ -565,7 +594,9 @@ class UzzapFirestoreService(
             "lastMessage" to message.body,
             "lastTimestamp" to message.timestamp,
             "lastSender" to message.senderUsername,
-            "participants" to listOf(message.senderUsername, recipientUsername)
+            "lastSenderUid" to senderUid,
+            "participants" to listOf(message.senderUsername, recipientUsername),
+            "participantUids" to listOf(senderUid, recipientUid)
         )
         val conversationRef = firestore.collection(CONVERSATIONS_COLLECTION)
             .document(conversationId)
@@ -655,13 +686,21 @@ class UzzapFirestoreService(
     fun sendFriendRequest(fromUser: UserProfileEntity, toUsername: String) {
         scope.launch(Dispatchers.IO) {
             try {
+                val senderUid = auth.currentUser?.uid ?: return@launch
+                val recipientUid = firestore.collection(PUBLIC_PROFILES_COLLECTION)
+                    .document(toUsername)
+                    .get()
+                    .await()
+                    .getString("authUid")
+                    ?: return@launch
                 val requestId = "${fromUser.username}_to_${toUsername}"
                 val reqData = hashMapOf<String, Any>(
                     "id" to requestId,
                     "fromUsername" to fromUser.username,
                     "fromDisplayName" to fromUser.displayName,
-                    "fromPhoneNumber" to fromUser.phoneNumber,
                     "toUsername" to toUsername,
+                    "fromUid" to senderUid,
+                    "toUid" to recipientUid,
                     "status" to "PENDING",
                     "timestamp" to System.currentTimeMillis()
                 )
@@ -694,14 +733,12 @@ class UzzapFirestoreService(
                         for (doc in snapshot.documents) {
                             val fromUser = doc.getString("fromUsername") ?: continue
                             val fromName = doc.getString("fromDisplayName") ?: fromUser
-                            val fromPhone = doc.getString("fromPhoneNumber") ?: ""
-
                             val contact = ContactEntity(
                                 id = "contact_$fromUser",
                                 username = fromUser,
                                 displayName = fromName,
                                 nickname = fromName.split(" ").firstOrNull() ?: fromName,
-                                phoneNumber = fromPhone,
+                                phoneNumber = "",
                                 presence = UserPresence.ONLINE,
                                 statusMessage = "Wants to connect on Uzzap \uD83D\uDCF1",
                                 category = ContactCategory.BUDDIES,
@@ -729,6 +766,7 @@ class UzzapFirestoreService(
         scope.launch(Dispatchers.IO) {
             try {
                 val reportData = hashMapOf(
+                    "reporterUid" to (auth.currentUser?.uid ?: return@launch),
                     "reporter" to reporterUsername,
                     "target" to target,
                     "reason" to reason,
@@ -742,11 +780,20 @@ class UzzapFirestoreService(
         }
     }
 
-    suspend fun deleteUserCloudData(username: String) {
-        try {
-            firestore.collection(USERS_COLLECTION).document(username).delete().await()
+    suspend fun deleteUserCloudData(username: String): Result<Unit> {
+        return try {
+            val currentUser = auth.currentUser
+                ?: return Result.failure(IllegalStateException("No authenticated account to delete."))
+            firestore.batch()
+                .delete(firestore.collection(USERS_COLLECTION).document(username))
+                .delete(firestore.collection(PUBLIC_PROFILES_COLLECTION).document(username))
+                .commit()
+                .await()
+            currentUser.delete().await()
+            Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error deleting user cloud data", e)
+            Result.failure(e)
         }
     }
 
@@ -757,5 +804,9 @@ class UzzapFirestoreService(
         inboxListener?.remove()
         friendRequestsListener?.remove()
         chatroomsListener?.remove()
+        activeRoomListener = null
+        inboxListener = null
+        friendRequestsListener = null
+        chatroomsListener = null
     }
 }

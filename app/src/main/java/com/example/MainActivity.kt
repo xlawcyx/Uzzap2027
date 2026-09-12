@@ -48,11 +48,13 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,11 +82,13 @@ import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.RoomDetailScreen
 import com.example.ui.screens.RoomsScreen
 import com.example.ui.screens.SettingsScreen
+import com.example.ui.screens.SplashScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.UzzapOrange
 import com.example.ui.theme.UzzapOrangeContainer
 import com.example.ui.viewmodel.MainTab
 import com.example.ui.viewmodel.UzzapViewModel
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,18 +96,31 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {
+                var showSplash by rememberSaveable { mutableStateOf(true) }
+
+                LaunchedEffect(Unit) {
+                    delay(SPLASH_DURATION_MILLIS)
+                    showSplash = false
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                         .safeDrawingPadding()
                 ) {
-                    UzzapApp()
+                    if (showSplash) {
+                        SplashScreen()
+                    } else {
+                        UzzapApp()
+                    }
                 }
             }
         }
     }
 }
+
+private const val SPLASH_DURATION_MILLIS = 1_200L
 
 private enum class AppScreen {
     TABS,
@@ -191,11 +208,8 @@ fun UzzapApp(
             onSignIn = { usernameOrPhone, pin ->
                 viewModel.signIn(usernameOrPhone, pin)
             },
-            onSignUp = { username, displayName, phone, pin, emoji, status ->
-                viewModel.signUp(username, displayName, phone, pin, emoji, status)
-            },
-            onQuickSignIn = {
-                viewModel.login("juandelacruz")
+            onSignUp = { username, displayName, phone, password, emoji, status ->
+                viewModel.signUp(username, displayName, phone, password, emoji, status)
             }
         )
         return

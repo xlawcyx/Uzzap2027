@@ -125,7 +125,9 @@ fun RoomsScreen(
                         placeholder = {
                             Text(
                                 "Search region, province, or city (e.g. Cebu, NCR, Davao)...",
-                                fontSize = 13.sp
+                                fontSize = 13.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         },
                         leadingIcon = {
@@ -588,7 +590,9 @@ fun RoomsScreen(
                             placeholder = {
                                 Text(
                                     "Filter provinces in ${regionInfo.shortName}...",
-                                    fontSize = 12.sp
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             },
                             leadingIcon = {

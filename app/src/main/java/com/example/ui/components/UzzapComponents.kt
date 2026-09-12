@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,7 +59,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -180,74 +184,89 @@ fun UzzapTopHeader(
         tonalElevation = 2.dp,
         modifier = modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // Brand Logo & Title
+        BoxWithConstraints {
+            val compactHeader = maxWidth < 400.dp
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = if (compactHeader) 10.dp else 16.dp,
+                        vertical = 10.dp
+                    ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(UzzapOrange),
-                    contentAlignment = Alignment.Center
+                // Brand Logo & Title
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "U",
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(UzzapOrange),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            text = "uzzap",
+                            text = "U",
+                            color = MaterialTheme.colorScheme.onPrimary,
                             fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            letterSpacing = (-0.5).sp
+                            fontWeight = FontWeight.Black
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Surface(
-                            color = UzzapOrange.copy(alpha = 0.18f),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text(
-                                text = "1.0.14",
-                                color = UzzapOrange,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                            )
-                        }
                     }
-                    Text(
-                        text = profile?.statusMessage ?: "Mobile Instant Messenger",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
-                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "uzzap",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                letterSpacing = (-0.5).sp
+                            )
+                            if (!compactHeader) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    color = UzzapOrange.copy(alpha = 0.18f),
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "1.0.14",
+                                        color = UzzapOrange,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                        Text(
+                            text = profile?.statusMessage ?: "Mobile Instant Messenger",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
-            }
 
-            // Cloud Status & User Presence
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Cloud Sync Pill
+                Spacer(modifier = Modifier.width(6.dp))
+
+                // Cloud sync stays available to accessibility services on every width.
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = syncStatusContainerColor(syncStatus),
-                    modifier = Modifier.padding(end = 6.dp)
+                    modifier = Modifier
+                        .padding(end = 6.dp)
+                        .semantics {
+                            contentDescription = syncStatus.label
+                        }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(
+                            horizontal = if (compactHeader) 7.dp else 6.dp,
+                            vertical = 4.dp
+                        ),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -258,13 +277,15 @@ fun UzzapTopHeader(
                                     syncStatusContentColor(syncStatus)
                                 )
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Cloud",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = syncStatusContentColor(syncStatus)
-                        )
+                        if (!compactHeader) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Cloud",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = syncStatusContentColor(syncStatus)
+                            )
+                        }
                     }
                 }
 
@@ -276,24 +297,32 @@ fun UzzapTopHeader(
                         color = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .minimumInteractiveComponentSize()
+                            .semantics {
+                                contentDescription = "Change presence, ${profile.status.label}"
+                            }
                             .testTag("presence_pill")
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            modifier = Modifier.padding(
+                                horizontal = if (compactHeader) 8.dp else 10.dp,
+                                vertical = 6.dp
+                            ),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             PresenceDot(presence = profile.status, size = 10)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = profile.status.label,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            if (!compactHeader) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = profile.status.label,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                             Spacer(modifier = Modifier.width(2.dp))
                             Icon(
                                 imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit presence",
+                                contentDescription = null,
                                 modifier = Modifier.size(12.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )

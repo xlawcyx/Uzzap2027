@@ -60,6 +60,7 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -81,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.ui.theme.UzzapOrange
+import kotlinx.coroutines.delay
 
 private val AVATAR_OPTIONS = listOf(
     "😎", "😊", "🚀", "🌺", "🇵🇭", "🎮", "🎧", "⭐", "🔥", "🐶", "🐱", "📱", "🏖️", "🏄", "☕"
@@ -92,17 +94,16 @@ fun LoginScreen(
     isLoading: Boolean = false,
     errorMessage: String? = null,
     onClearError: () -> Unit = {},
-    onSignIn: (usernameOrPhone: String, pin: String) -> Unit = { user, _ -> onLogin(user) },
-    onSignUp: (username: String, displayName: String, phone: String, pin: String, avatarEmoji: String, statusMessage: String) -> Unit = { _, _, _, _, _, _ -> },
-    onQuickSignIn: () -> Unit = { onLogin("juandelacruz") },
+    onSignIn: (username: String, password: String) -> Unit = { user, _ -> onLogin(user) },
+    onSignUp: (username: String, displayName: String, phone: String, password: String, avatarEmoji: String, statusMessage: String) -> Unit = { _, _, _, _, _, _ -> },
     modifier: Modifier = Modifier
 ) {
     // Tab selection: 0 = Sign In, 1 = Sign Up
     var selectedTab by remember { mutableIntStateOf(0) }
 
     // Sign In Fields
-    var signInUsername by remember { mutableStateOf("juandelacruz") }
-    var signInPassword by remember { mutableStateOf("••••••••") }
+    var signInUsername by remember { mutableStateOf("") }
+    var signInPassword by remember { mutableStateOf("") }
     var signInPasswordVisible by remember { mutableStateOf(false) }
 
     // Sign Up Fields
@@ -116,6 +117,20 @@ fun LoginScreen(
 
     // Local validation feedback
     var localError by remember { mutableStateOf<String?>(null) }
+    var signUpLoadingMessage by remember { mutableStateOf("Connecting...") }
+
+    LaunchedEffect(isLoading, selectedTab) {
+        if (!isLoading || selectedTab != 1) {
+            signUpLoadingMessage = "Connecting..."
+            return@LaunchedEffect
+        }
+
+        signUpLoadingMessage = "Connecting..."
+        delay(SIGN_UP_STAGE_DURATION_MILLIS)
+        signUpLoadingMessage = "Authenticating..."
+        delay(SIGN_UP_STAGE_DURATION_MILLIS)
+        signUpLoadingMessage = "Initializing..."
+    }
 
     val displayedError = errorMessage ?: localError
 
@@ -165,7 +180,7 @@ fun LoginScreen(
             )
 
             Text(
-                text = "Philippine Mobile Messenger • Smart Communications",
+                text = "Philippine Mobile Messenger",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
@@ -347,22 +362,22 @@ fun LoginScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Enter your username or mobile number",
+                            text = "Enter your username and password",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Username or Phone Field
+                        // Username Field
                         OutlinedTextField(
                             value = signInUsername,
                             onValueChange = {
                                 signInUsername = it
                                 localError = null
                             },
-                            label = { Text("Username or Mobile #") },
-                            placeholder = { Text("juandelacruz or +63 918...") },
+                            label = { Text("Username") },
+                            placeholder = { Text("juandelacruz") },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Person,
@@ -387,14 +402,14 @@ fun LoginScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Password / PIN Field
+                        // Password Field
                         OutlinedTextField(
                             value = signInPassword,
                             onValueChange = {
                                 signInPassword = it
                                 localError = null
                             },
-                            label = { Text("PIN / Password") },
+                            label = { Text("Password") },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Lock,
@@ -418,7 +433,7 @@ fun LoginScreen(
                             ),
                             keyboardActions = KeyboardActions(
                                 onDone = {
-                                    if (signInUsername.isNotBlank()) {
+                                    if (signInUsername.isNotBlank() && signInPassword.isNotBlank()) {
                                         onSignIn(signInUsername.trim(), signInPassword)
                                     }
                                 }
@@ -439,7 +454,11 @@ fun LoginScreen(
                         Button(
                             onClick = {
                                 if (signInUsername.isBlank()) {
-                                    localError = "Please enter your username or mobile number."
+                                    localError = "Please enter your username."
+                                    return@Button
+                                }
+                                if (signInPassword.isBlank()) {
+                                    localError = "Please enter your password."
                                     return@Button
                                 }
                                 onSignIn(signInUsername.trim(), signInPassword)
@@ -463,7 +482,7 @@ fun LoginScreen(
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = "Connecting to Firestore...",
+                                    text = "Connecting...",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -480,26 +499,6 @@ fun LoginScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Quick Sign-In Button
-                        OutlinedButton(
-                            onClick = onQuickSignIn,
-                            enabled = !isLoading,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(46.dp)
-                                .testTag("quick_login_button")
-                        ) {
-                            Text(
-                                text = "Quick Sign-In (Juan Dela Cruz)",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
                         }
 
                         Spacer(modifier = Modifier.height(14.dp))
@@ -652,15 +651,15 @@ fun LoginScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // PIN / Password
+                        // Password
                         OutlinedTextField(
                             value = signUpPassword,
                             onValueChange = {
                                 signUpPassword = it
                                 localError = null
                             },
-                            label = { Text("Create PIN / Password") },
-                            placeholder = { Text("4 to 8 characters") },
+                            label = { Text("Create Password") },
+                            placeholder = { Text("At least 6 characters") },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Lock,
@@ -797,8 +796,8 @@ fun LoginScreen(
                                     localError = "Please enter your display name."
                                     return@Button
                                 }
-                                if (signUpPassword.length < 4) {
-                                    localError = "PIN/Password must be at least 4 characters long."
+                                if (signUpPassword.length < 6) {
+                                    localError = "Password must be at least 6 characters long."
                                     return@Button
                                 }
                                 onSignUp(
@@ -829,7 +828,7 @@ fun LoginScreen(
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = "Creating Firestore Account...",
+                                    text = signUpLoadingMessage,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -892,3 +891,5 @@ fun LoginScreen(
         }
     }
 }
+
+private const val SIGN_UP_STAGE_DURATION_MILLIS = 700L
