@@ -5,7 +5,10 @@ data class PhilippineProvince(
     val roomTag: String,
     val region: String,
     val topic: String
-)
+) {
+    val roomId: String
+        get() = "room_${name.lowercase().replace(" ", "_").replace("'", "")}"
+}
 
 data class PhilippineRegionInfo(
     val id: String,
@@ -101,18 +104,27 @@ object PhilippineRegions {
             name = "Region VI (Western Visayas)",
             shortName = "Western Visayas",
             islandGroup = "Visayas",
-            description = "Sugarlandia heritage, world-famous Boracay and colorful festivals",
+            description = "World-famous Boracay, heritage districts and colorful festivals",
             emoji = "\uD83C\uDF89",
-            highlights = "Iloilo Dinagyang, Boracay, Bacolod MassKara, Guimaras"
+            highlights = "Iloilo Dinagyang, Boracay, Antique, Capiz, Guimaras"
+        ),
+        PhilippineRegionInfo(
+            id = "nir",
+            name = "Negros Island Region (NIR)",
+            shortName = "Negros Island Region",
+            islandGroup = "Visayas",
+            description = "Sugarlandia heritage, mountain landscapes and island coastlines",
+            emoji = "\uD83C\uDF3E",
+            highlights = "Bacolod, Negros Occidental, Dumaguete, Negros Oriental, Siquijor"
         ),
         PhilippineRegionInfo(
             id = "region_7",
             name = "Region VII (Central Visayas)",
             shortName = "Central Visayas",
             islandGroup = "Visayas",
-            description = "Queen City of the South, Chocolate Hills, tarsiers and diving",
+            description = "Queen City of the South, Chocolate Hills, tarsiers and island diving",
             emoji = "\uD83C\uDFDD\uFE0F",
-            highlights = "Cebu City, Mactan, Bohol Chocolate Hills, Panglao, Dumaguete"
+            highlights = "Cebu City, Mactan, Bohol Chocolate Hills, Panglao"
         ),
         PhilippineRegionInfo(
             id = "region_8",
@@ -132,7 +144,7 @@ object PhilippineRegions {
             islandGroup = "Mindanao",
             description = "City of Flowers, pink sand beaches, Spanish-creole heritage",
             emoji = "\uD83C\uDF3A",
-            highlights = "Zamboanga City, Fort Pilar, Sta. Cruz Pink Beach, Dapitan"
+            highlights = "Zamboanga City, Dapitan, Sulu, Sta. Cruz Pink Beach"
         ),
         PhilippineRegionInfo(
             id = "region_10",
@@ -177,7 +189,7 @@ object PhilippineRegions {
             islandGroup = "Mindanao",
             description = "Grand Mosques, scenic Lake Lanao, Torogan royal houses and island atolls",
             emoji = "\uD83D\uDD4C",
-            highlights = "Grand Mosque of Cotabato, Lake Lanao, Sulu, Tawi-Tawi"
+            highlights = "Grand Mosque of Cotabato, Lake Lanao, Basilan, Tawi-Tawi"
         )
     )
 
@@ -194,26 +206,7 @@ object PhilippineRegions {
             )
     }
 
-    val REGION_LIST = listOf(
-        "All",
-        "NCR (Metro Manila)",
-        "CAR (Cordillera)",
-        "Region I (Ilocos)",
-        "Region II (Cagayan Valley)",
-        "Region III (Central Luzon)",
-        "Region IV-A (CALABARZON)",
-        "Region IV-B (MIMAROPA)",
-        "Region V (Bicol)",
-        "Region VI (Western Visayas)",
-        "Region VII (Central Visayas)",
-        "Region VIII (Eastern Visayas)",
-        "Region IX (Zamboanga)",
-        "Region X (Northern Mindanao)",
-        "Region XI (Davao)",
-        "Region XII (SOCCSKSARGEN)",
-        "Region XIII (Caraga)",
-        "BARMM (Bangsamoro)"
-    )
+    val REGION_LIST = listOf("All") + REGIONS.map { it.name }
 
     val PROVINCES = listOf(
         // 1. NCR (Metro Manila)
@@ -229,6 +222,11 @@ object PhilippineRegions {
         PhilippineProvince("Las Piñas", "#LasPiñas", "NCR (Metro Manila)", "Lungsod ng makasaysayang Bamboo Organ at asinang pangkabuhayan."),
         PhilippineProvince("Marikina", "#Marikina", "NCR (Metro Manila)", "Shoe Capital ng Pilipinas - Malinis na river park at disiplinadong komunidad."),
         PhilippineProvince("Muntinlupa", "#Muntinlupa", "NCR (Metro Manila)", "Emerald City - Filinvest Alabang business park at timog tarangkahan."),
+        PhilippineProvince("Malabon", "#Malabon", "NCR (Metro Manila)", "Heritage city na kilala sa pancit Malabon at makasaysayang bahay."),
+        PhilippineProvince("Navotas", "#Navotas", "NCR (Metro Manila)", "Fishing Capital ng Pilipinas at sentro ng kabuhayang pandagat."),
+        PhilippineProvince("San Juan", "#SanJuan", "NCR (Metro Manila)", "Makasaysayang Pinaglabanan Shrine at sentrong komersyal ng Metro Manila."),
+        PhilippineProvince("Valenzuela", "#Valenzuela", "NCR (Metro Manila)", "Masiglang industriyal at residential gateway ng hilagang Metro Manila."),
+        PhilippineProvince("Pateros", "#Pateros", "NCR (Metro Manila)", "Nag-iisang munisipalidad ng Metro Manila, kilala sa balut at alfombra."),
 
         // 2. CAR (Cordillera)
         PhilippineProvince("Benguet", "#Benguet", "CAR (Cordillera)", "Salad Bowl ng Pilipinas, strawberry fields at City of Pines Baguio."),
@@ -284,19 +282,21 @@ object PhilippineRegions {
 
         // 9. Region VI (Western Visayas)
         PhilippineProvince("Iloilo", "#Iloilo", "Region VI (Western Visayas)", "Dinagyang Festival, Miagao UNESCO Church at La Paz Batchoy."),
-        PhilippineProvince("Negros Occidental", "#NegrosOccidental", "Region VI (Western Visayas)", "Sugarlandia, Bacolod MassKara Festival at The Ruins."),
         PhilippineProvince("Aklan", "#Aklan", "Region VI (Western Visayas)", "Mundong-kilalang Boracay Island at Kalibo Ati-Atihan."),
         PhilippineProvince("Antique", "#Antique", "Region VI (Western Visayas)", "Kawa hot bath, Malumpati cold spring at baybayin."),
         PhilippineProvince("Capiz", "#Capiz", "Region VI (Western Visayas)", "Seafood Capital ng Pilipinas at makasaysayang Roxas City."),
         PhilippineProvince("Guimaras", "#Guimaras", "Region VI (Western Visayas)", "Pinakamatamis na mangga sa mundo at mapayapang isla."),
 
-        // 10. Region VII (Central Visayas)
+        // 10. Negros Island Region (NIR)
+        PhilippineProvince("Negros Occidental", "#NegrosOccidental", "Negros Island Region (NIR)", "Sugarlandia, Bacolod MassKara Festival at The Ruins."),
+        PhilippineProvince("Negros Oriental", "#NegrosOriental", "Negros Island Region (NIR)", "Dumaguete City of Gentle People, Apo Island diving."),
+        PhilippineProvince("Siquijor", "#Siquijor", "Negros Island Region (NIR)", "Isla ng hiwaga, Cambugahay Falls at puting buhangin."),
+
+        // 11. Region VII (Central Visayas)
         PhilippineProvince("Cebu", "#Cebu", "Region VII (Central Visayas)", "Queen City of the South, Magellan's Cross, lechon at beaches."),
         PhilippineProvince("Bohol", "#Bohol", "Region VII (Central Visayas)", "Chocolate Hills, Philippine Tarsier, Panglao at Loboc River."),
-        PhilippineProvince("Negros Oriental", "#NegrosOriental", "Region VII (Central Visayas)", "Dumaguete City of Gentle People, Apo Island diving."),
-        PhilippineProvince("Siquijor", "#Siquijor", "Region VII (Central Visayas)", "Isla ng hiwaga, Cambugahay Falls at puting buhangin."),
 
-        // 11. Region VIII (Eastern Visayas)
+        // 12. Region VIII (Eastern Visayas)
         PhilippineProvince("Leyte", "#Leyte", "Region VIII (Eastern Visayas)", "San Juanico Bridge, Tacloban at MacArthur Landing Memorial."),
         PhilippineProvince("Samar", "#Samar", "Region VIII (Eastern Visayas)", "Sohoton Caves, natural limestone bridge at talon."),
         PhilippineProvince("Eastern Samar", "#EasternSamar", "Region VIII (Eastern Visayas)", "Calicoan Island surfing, Guiuan at simoy ng Pacific."),
@@ -304,44 +304,50 @@ object PhilippineRegions {
         PhilippineProvince("Southern Leyte", "#SouthernLeyte", "Region VIII (Eastern Visayas)", "Limasawa Island first mass site at whale shark diving."),
         PhilippineProvince("Biliran", "#Biliran", "Region VIII (Eastern Visayas)", "Isla ng mga kamangha-manghang talon at Sambawan paradise."),
 
-        // 12. Region IX (Zamboanga)
+        // 13. Region IX (Zamboanga)
         PhilippineProvince("Zamboanga del Sur", "#ZamboangaDelSur", "Region IX (Zamboanga)", "City of Flowers, Fort Pilar, Sta. Cruz pink beach."),
         PhilippineProvince("Zamboanga del Norte", "#ZamboangaDelNorte", "Region IX (Zamboanga)", "Makasaysayang Dapitan Rizal Shrine at Dakak beach."),
         PhilippineProvince("Zamboanga Sibugay", "#ZamboangaSibugay", "Region IX (Zamboanga)", "Sentro ng talaba at kabuhayang pandagat."),
+        PhilippineProvince("Sulu", "#Sulu", "Region IX (Zamboanga)", "Perlas ng Dagat Sulu at mayamang kasaysayan ng sultanato."),
 
-        // 13. Region X (Northern Mindanao)
+        // 14. Region X (Northern Mindanao)
         PhilippineProvince("Misamis Oriental", "#MisamisOriental", "Region X (Northern Mindanao)", "Cagayan de Oro white water rafting at trade center."),
         PhilippineProvince("Bukidnon", "#Bukidnon", "Region X (Northern Mindanao)", "High-altitude pineapple plantations at Mount Kitanglad."),
         PhilippineProvince("Camiguin", "#Camiguin", "Region X (Northern Mindanao)", "Island Born of Fire, Sunken Cemetery at matamis na lansones."),
         PhilippineProvince("Lanao del Norte", "#LanaoDelNorte", "Region X (Northern Mindanao)", "Maria Cristina Falls at City of Majestic Waterfalls."),
         PhilippineProvince("Misamis Occidental", "#MisamisOccidental", "Region X (Northern Mindanao)", "Mount Malindang Range Peace Park at Ozamiz."),
 
-        // 14. Region XI (Davao)
+        // 15. Region XI (Davao)
         PhilippineProvince("Davao del Sur", "#DavaoDelSur", "Region XI (Davao)", "Tuktok ng Mount Apo, Durian Capital at Davao City."),
         PhilippineProvince("Davao del Norte", "#DavaoDelNorte", "Region XI (Davao)", "Banana Capital ng Pilipinas, Tagum at Samal Island."),
         PhilippineProvince("Davao Oriental", "#DavaoOriental", "Region XI (Davao)", "Sunrise Capital ng Pilipinas, Aliwagwag Falls at Dahican."),
         PhilippineProvince("Davao de Oro", "#DavaoDeOro", "Region XI (Davao)", "Maragusan cold spring, bundok at mina."),
         PhilippineProvince("Davao Occidental", "#DavaoOccidental", "Region XI (Davao)", "Katimugang baybayin at Sarangani islands."),
 
-        // 15. Region XII (SOCCSKSARGEN)
+        // 16. Region XII (SOCCSKSARGEN)
         PhilippineProvince("South Cotabato", "#SouthCotabato", "Region XII (SOCCSKSARGEN)", "Tuna Capital General Santos, Lake Sebu 7 falls at T'nalak."),
         PhilippineProvince("Cotabato", "#Cotabato", "Region XII (SOCCSKSARGEN)", "Asik-Asik curtain falls, Kidapawan at Mt. Apo trails."),
         PhilippineProvince("Sultan Kudarat", "#SultanKudarat", "Region XII (SOCCSKSARGEN)", "Tacurong bird sanctuary at gintong kapitolyo."),
         PhilippineProvince("Sarangani", "#Sarangani", "Region XII (SOCCSKSARGEN)", "Gumasa white sand beach, paragliding at Maitum jars."),
 
-        // 16. Region XIII (Caraga)
+        // 17. Region XIII (Caraga)
         PhilippineProvince("Surigao del Norte", "#SurigaoDelNorte", "Region XIII (Caraga)", "Siargao Island Surfing Capital of the Philippines, Cloud 9."),
         PhilippineProvince("Surigao del Sur", "#SurigaoDelSur", "Region XIII (Caraga)", "Hinatuan Enchanted River at Tinuy-an Falls."),
         PhilippineProvince("Agusan del Norte", "#AgusanDelNorte", "Region XIII (Caraga)", "Makasaysayang Butuan City at Sinaunang Balangay boats."),
         PhilippineProvince("Agusan del Sur", "#AgusanDelSur", "Region XIII (Caraga)", "Agusan Marsh wildlife sanctuary at ilog."),
         PhilippineProvince("Dinagat Islands", "#DinagatIslands", "Region XIII (Caraga)", "Mahiwagang isla, tidal rock pools at hidden lagoons."),
 
-        // 17. BARMM (Bangsamoro)
+        // 18. BARMM (Bangsamoro)
         PhilippineProvince("Maguindanao del Norte", "#MaguindanaoDelNorte", "BARMM (Bangsamoro)", "Grand Mosque of Cotabato at makasaysayang kultura."),
         PhilippineProvince("Maguindanao del Sur", "#MaguindanaoDelSur", "BARMM (Bangsamoro)", "Tradisyon ng Inaul weaving at kapatagan."),
         PhilippineProvince("Lanao del Sur", "#LanaoDelSur", "BARMM (Bangsamoro)", "Scenic Lake Lanao, Marawi at sagradong arkitekturang Torogan."),
-        PhilippineProvince("Sulu", "#Sulu", "BARMM (Bangsamoro)", "Perlas ng Dagat Sulu at mayamang kasaysayan ng sultanato."),
         PhilippineProvince("Tawi-Tawi", "#TawiTawi", "BARMM (Bangsamoro)", "Pinakatimog na lalawigan ng Pilipinas, Bud Bongao at atolls."),
         PhilippineProvince("Basilan", "#Basilan", "BARMM (Bangsamoro)", "Malamawi white beach at makukulay na habing Yakan.")
     )
+
+    fun provincesFor(regionName: String): List<PhilippineProvince> =
+        PROVINCES.filter { it.region.equals(regionName, ignoreCase = true) }
+
+    fun getProvinceByRoomId(roomId: String): PhilippineProvince? =
+        PROVINCES.firstOrNull { it.roomId == roomId }
 }

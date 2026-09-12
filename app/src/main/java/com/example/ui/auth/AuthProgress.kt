@@ -1,0 +1,10 @@
+package com.example.ui.auth
+
+enum class AuthProgressStage(val label: String) {
+    CONNECTING("CONNECTING..."),
+    AUTHENTICATING("AUTHENTICATING..."),
+    INITIALIZING("INITIALIZING...")
+}
+
+const val AUTH_PROGRESS_STAGE_DURATION_MILLIS = 700L
+const val AUTH_PROGRESS_TOTAL_DURATION_MILLIS = AUTH_PROGRESS_STAGE_DURATION_MILLIS * 3

@@ -388,7 +388,7 @@ fun RoomsScreen(
 
                         RegionRowCard(
                             region = regionInfo,
-                            provinceCount = if (provincesInRegion.isNotEmpty()) provincesInRegion.size else 4,
+                            provinceCount = PhilippineRegions.provincesFor(regionInfo.name).size,
                             joinedCount = joinedCount,
                             totalChatters = totalChatters,
                             onClick = {
