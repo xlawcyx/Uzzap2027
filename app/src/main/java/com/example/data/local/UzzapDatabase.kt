@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.room.migration.Migration
+import com.example.BuildConfig
 import com.example.data.model.ChatroomEntity
 import com.example.data.model.ContactEntity
 import com.example.data.model.ConversationEntity
@@ -38,6 +40,12 @@ abstract class UzzapDatabase : RoomDatabase() {
     abstract fun chatroomDao(): ChatroomDao
 
     companion object {
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Version 2 currently changes the catalog seed only; preserve all user data.
+            }
+        }
+
         @Volatile
         private var INSTANCE: UzzapDatabase? = null
 
@@ -48,7 +56,7 @@ abstract class UzzapDatabase : RoomDatabase() {
                     UzzapDatabase::class.java,
                     "uzzap_database"
                 )
-                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .addMigrations(MIGRATION_1_2)
                     .addCallback(UzzapDatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
@@ -79,22 +87,24 @@ abstract class UzzapDatabase : RoomDatabase() {
             val userDao = database.userDao()
             val chatroomDao = database.chatroomDao()
 
-            // 1. Ensure user profile exists
-            val existingProfile = userDao.getProfile()
-            if (existingProfile == null) {
-                userDao.insertProfile(
-                    UserProfileEntity(
-                        id = "me",
-                        username = "juandelacruz",
-                        displayName = "Juan Dela Cruz",
-                        phoneNumber = "+63 918 555 1014",
-                        status = UserPresence.ONLINE,
-                        statusMessage = "Mabuhay! Connecting on Uzzap \uD83C\uDDF5\uD83C\uDDED",
-                        avatarEmoji = "\uD83D\uDE0E",
-                        phoneVerified = true,
-                        vibrationEnabled = true
+            // Debug builds may seed a local demo profile; release builds require sign-in.
+            if (BuildConfig.ALLOW_DEMO_AUTH) {
+                val existingProfile = userDao.getProfile()
+                if (existingProfile == null) {
+                    userDao.insertProfile(
+                        UserProfileEntity(
+                            id = "me",
+                            username = "juandelacruz",
+                            displayName = "Juan Dela Cruz",
+                            phoneNumber = "+63 918 555 1014",
+                            status = UserPresence.ONLINE,
+                            statusMessage = "Mabuhay! Connecting on Uzzap \uD83C\uDDF5\uD83C\uDDED",
+                            avatarEmoji = "\uD83D\uDE0E",
+                            phoneVerified = true,
+                            vibrationEnabled = true
+                        )
                     )
-                )
+                }
             }
 
             // 2. Migrate old mock data, then upsert the current official region catalog.

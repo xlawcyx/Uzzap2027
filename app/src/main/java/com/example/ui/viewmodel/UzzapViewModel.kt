@@ -463,6 +463,7 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
                 _activeRoomId.value = null
             } catch (e: Exception) {
                 android.util.Log.e("UzzapViewModel", "Error deleting account", e)
+                _authError.value = e.message ?: "Account deletion failed. Please try again."
             }
         }
     }

@@ -652,10 +652,13 @@ class UzzapFirestoreService(
                         return@addSnapshotListener
                     }
                     if (snapshot != null && !snapshot.isEmpty) {
-                        for (doc in snapshot.documents) {
+                        for (change in snapshot.documentChanges) {
+                            if (change.type != com.google.firebase.firestore.DocumentChange.Type.ADDED) continue
+                            val doc = change.document
                             val id = doc.getString("id") ?: doc.id
-                            val convoId = doc.getString("conversationId") ?: "convo_${doc.getString("senderUsername")}"
-                            val senderUser = doc.getString("senderUsername") ?: "uzzap_buddy"
+                            val senderUser = doc.getString("senderUsername")
+                                ?: continue
+                            val convoId = doc.getString("conversationId") ?: "convo_$senderUser"
                             val senderName = doc.getString("senderDisplayName") ?: senderUser
                             val typeStr = doc.getString("type") ?: "TEXT"
                             val body = doc.getString("body") ?: ""
@@ -797,17 +800,39 @@ class UzzapFirestoreService(
         return try {
             val currentUser = auth.currentUser
                 ?: return Result.failure(IllegalStateException("No authenticated account to delete."))
+            val normalizedUsername = normalizeUsername(username)
+            val userUid = currentUser.uid
+
+            deleteMatchingDocuments(
+                firestore.collection(FRIEND_REQUESTS_COLLECTION).whereEqualTo("senderUid", userUid)
+            )
+            deleteMatchingDocuments(
+                firestore.collection(FRIEND_REQUESTS_COLLECTION).whereEqualTo("recipientUid", userUid)
+            )
+            deleteMatchingDocuments(
+                firestore.collection(CONVERSATIONS_COLLECTION).whereArrayContains("participantUids", userUid)
+            )
             firestore.batch()
-                .delete(firestore.collection(USERS_COLLECTION).document(username))
-                .delete(firestore.collection(PUBLIC_PROFILES_COLLECTION).document(username))
+                .delete(firestore.collection(USERS_COLLECTION).document(normalizedUsername))
+                .delete(firestore.collection(PUBLIC_PROFILES_COLLECTION).document(normalizedUsername))
                 .commit()
                 .await()
+
             currentUser.delete().await()
+            auth.signOut()
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error deleting user cloud data", e)
             Result.failure(e)
         }
+    }
+
+    private suspend fun deleteMatchingDocuments(query: Query) {
+        val snapshot = query.get().await()
+        if (snapshot.isEmpty) return
+        val batch = firestore.batch()
+        snapshot.documents.forEach { document -> batch.delete(document.reference) }
+        batch.commit().await()
     }
 
     fun cleanUp() {

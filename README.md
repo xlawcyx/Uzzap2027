@@ -12,9 +12,20 @@
 
 ---
 
-Uzzap brings buddy lists, direct messaging, and Philippine regional chatrooms into one Compose-powered Android experience. Users can manage their profile and presence, join communities, and keep conversations synced through Firebase.
+Uzzap is a Compose-powered Android messenger built for meaningful conversations and regional communities. Connect with friends, discover Philippine chatrooms, and keep your conversations available across devices through Firebase-backed sync.
 
-## ✨ Features
+> A focused social messaging experience with local-first data, real-time cloud services, and a clean Material 3 interface.
+
+## Contents
+
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Getting started](#getting-started)
+- [Testing](#testing)
+- [Project structure](#project-structure)
+- [Release checklist](#release-checklist)
+
+## Features
 
 | Connect | Converse | Personalize |
 | --- | --- | --- |
@@ -125,3 +136,23 @@ app/src/main/java/com/example/
 ```
 
 Firestore security rules and indexes live in [`firestore.rules`](firestore.rules) and [`firestore.indexes.json`](firestore.indexes.json).
+
+## Release checklist
+
+Before publishing Uzzap to Google Play, verify the following:
+
+- [ ] Production `google-services.json` is configured securely.
+- [ ] Release signing credentials are stored outside the repository.
+- [ ] Demo credentials and offline authentication are disabled in release builds.
+- [ ] Account deletion removes Firebase Authentication and associated cloud data.
+- [ ] Room migrations are tested without destructive data loss.
+- [ ] Privacy policy and Play Console Data Safety declarations are complete.
+- [ ] A signed release `.aab` has been tested on supported Android versions.
+
+## Contributing
+
+Keep changes focused, preserve the existing Compose and repository architecture, and add or update tests for behavior that affects authentication, synchronization, persistence, or release configuration.
+
+## License
+
+No license has been declared yet. Contact the repository owner before redistributing or publishing derived work.

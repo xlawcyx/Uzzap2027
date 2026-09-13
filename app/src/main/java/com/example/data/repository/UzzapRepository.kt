@@ -71,10 +71,10 @@ class UzzapRepository(
         try {
                 // Wait for user profile
                 val profile = userDao.getProfile()
-                val myUsername = profile?.username ?: "juandelacruz"
+                val myUsername = profile?.username ?: return
 
                 // 1. Sync current user presence/profile to Firestore
-                profile?.let { firestoreService.syncUserProfile(it) }
+                profile.let { firestoreService.syncUserProfile(it) }
 
                 // 2. Seed initial chatrooms if needed & listen to cloud chatrooms
                 val localRooms = chatroomDao.getAllChatroomsFlow().firstOrNull() ?: emptyList()
@@ -173,7 +173,7 @@ class UzzapRepository(
     fun enterRoom(roomId: String) {
         scope.launch(Dispatchers.IO) {
             val profile = userDao.getProfile()
-            val myUsername = profile?.username ?: "juandelacruz"
+            val myUsername = profile?.username ?: return@launch
             firestoreService.listenToRoomMessages(roomId, myUsername) { incomingRoomMsg ->
                 scope.launch(Dispatchers.IO) {
                     val existing = chatroomDao.getRoomMessageById(incomingRoomMsg.id)
