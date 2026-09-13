@@ -191,7 +191,7 @@ fun UZZ-APPTopHeader(
                     .fillMaxWidth()
                     .padding(
                         horizontal = if (compactHeader) 10.dp else 16.dp,
-                        vertical = 10.dp
+                        vertical = 8.dp
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -218,7 +218,7 @@ fun UZZ-APPTopHeader(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "uzzap",
+                                text = "UZZ-APP",
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -231,7 +231,7 @@ fun UZZ-APPTopHeader(
                                     shape = RoundedCornerShape(6.dp)
                                 ) {
                                     Text(
-                                        text = "1.0.14",
+                                        text = "1.0",
                                         color = UZZ-APPOrange,
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
@@ -277,15 +277,7 @@ fun UZZ-APPTopHeader(
                                     syncStatusContentColor(syncStatus)
                                 )
                         )
-                        if (!compactHeader) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Cloud",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = syncStatusContentColor(syncStatus)
-                            )
-                        }
+
                     }
                 }
 
