@@ -188,28 +188,29 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Cloud Firestore Status Pill
+            // Cloud / Offline Status Pill
+            val isCloudActive = com.example.UzzapApplication.isRealFirebaseConfigured
             Surface(
-                color = Color(0xFFE8F5E9),
+                color = if (isCloudActive) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
                 shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, Color(0xFFC8E6C9))
+                border = BorderStroke(1.dp, if (isCloudActive) Color(0xFFC8E6C9) else Color(0xFFFFE0B2))
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.CloudDone,
+                        imageVector = if (isCloudActive) Icons.Default.CloudDone else Icons.Default.Phone,
                         contentDescription = null,
-                        tint = Color(0xFF2E7D32),
+                        tint = if (isCloudActive) Color(0xFF2E7D32) else UzzapOrange,
                         modifier = Modifier.size(13.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Firestore Cloud Active • uzzap2027",
+                        text = if (isCloudActive) "Firestore Cloud Active • uzzap2027" else "Uzzap MIDP 2.0 • Offline & Local Ready",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2E7D32)
+                        color = if (isCloudActive) Color(0xFF2E7D32) else UzzapOrange
                     )
                 }
             }
@@ -499,6 +500,29 @@ fun LoginScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedButton(
+                            onClick = {
+                                signInUsername = "juandelacruz"
+                                signInPassword = "password"
+                                onSignIn("juandelacruz", "password")
+                            },
+                            enabled = !isLoading,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(42.dp)
+                                .testTag("demo_login_button")
+                        ) {
+                            Text(
+                                text = "Quick Sign In as juandelacruz",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(14.dp))

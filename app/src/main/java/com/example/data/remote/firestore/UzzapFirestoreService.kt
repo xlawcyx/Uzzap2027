@@ -64,17 +64,16 @@ class UzzapFirestoreService(
     }
 
     private val firestore: FirebaseFirestore by lazy {
+        val db = FirebaseFirestore.getInstance()
         try {
-            val db = FirebaseFirestore.getInstance()
             val settings = FirebaseFirestoreSettings.Builder()
                 .setLocalCacheSettings(PersistentCacheSettings.newBuilder().build())
                 .build()
             db.firestoreSettings = settings
-            db
         } catch (e: Exception) {
-            Log.e(TAG, "Error initializing Firestore with persistent cache: ${e.message}", e)
-            FirebaseFirestore.getInstance()
+            Log.w(TAG, "Firestore cache settings warning: ${e.message}")
         }
+        db
     }
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
@@ -93,6 +92,10 @@ class UzzapFirestoreService(
     }
 
     private fun checkConnectivity() {
+        if (!com.example.UzzapApplication.isRealFirebaseConfigured) {
+            _syncStatus.value = FirestoreSyncStatus.OFFLINE_CACHE
+            return
+        }
         scope.launch(Dispatchers.IO) {
             try {
                 // Quick ping document to verify connectivity
@@ -140,6 +143,11 @@ class UzzapFirestoreService(
             return Result.failure(
                 IllegalArgumentException("Password must be at least $MIN_PASSWORD_LENGTH characters.")
             )
+        }
+
+        if (!com.example.UzzapApplication.isRealFirebaseConfigured) {
+            Log.i(TAG, "Skipping cloud signUp: no cloud Firebase project configured")
+            return Result.failure(IllegalStateException("Cloud authentication offline: no valid API key configured"))
         }
 
         var createdUser: FirebaseUser? = null
@@ -221,6 +229,11 @@ class UzzapFirestoreService(
         }
         if (password.isBlank()) {
             return Result.failure(IllegalArgumentException("Please enter your password."))
+        }
+
+        if (!com.example.UzzapApplication.isRealFirebaseConfigured) {
+            Log.i(TAG, "Skipping cloud signIn: no cloud Firebase project configured")
+            return Result.failure(IllegalStateException("Cloud authentication offline: no valid API key configured"))
         }
 
         return try {
