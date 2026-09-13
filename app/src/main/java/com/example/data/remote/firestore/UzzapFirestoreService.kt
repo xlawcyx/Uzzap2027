@@ -652,10 +652,13 @@ class UzzapFirestoreService(
                         return@addSnapshotListener
                     }
                     if (snapshot != null && !snapshot.isEmpty) {
-                        for (doc in snapshot.documents) {
+                        for (change in snapshot.documentChanges) {
+                            if (change.type != com.google.firebase.firestore.DocumentChange.Type.ADDED) continue
+                            val doc = change.document
                             val id = doc.getString("id") ?: doc.id
-                            val convoId = doc.getString("conversationId") ?: "convo_${doc.getString("senderUsername")}"
-                            val senderUser = doc.getString("senderUsername") ?: "uzzap_buddy"
+                            val senderUser = doc.getString("senderUsername")
+                                ?: continue
+                            val convoId = doc.getString("conversationId") ?: "convo_$senderUser"
                             val senderName = doc.getString("senderDisplayName") ?: senderUser
                             val typeStr = doc.getString("type") ?: "TEXT"
                             val body = doc.getString("body") ?: ""
