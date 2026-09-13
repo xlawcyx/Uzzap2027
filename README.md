@@ -54,7 +54,10 @@ UZZ-APP is a Compose-powered Android messenger built for meaningful conversation
 - An Android device or emulator running API 24 or later
 
 > [!NOTE]
-> The repository currently includes Gradle wrapper properties but not the `gradlew` launcher or wrapper JAR. Use a locally installed Gradle 9.3.1 until those files are restored.
+> The repository currently includes Gradle wrapper properties but not the `gradlew`, `gradlew.bat`, or wrapper JAR files. Use a locally installed Gradle 9.3.1 until the wrapper is restored.
+
+> [!WARNING]
+> `app/google-services.json` is intentionally excluded from Git. Each developer and CI environment must provide its own Firebase configuration file.
 
 ### Configure Firebase
 
@@ -155,4 +158,15 @@ Keep changes focused, preserve the existing Compose and repository architecture,
 
 ## License
 
-No license has been declared yet. Contact the repository owner before redistributing or publishing derived work.
+No license file is currently present on `main`. Add the approved license before redistributing or publishing derived work.
+
+## Current release
+
+- App name: UZZ-APP
+- Version name: 1.0
+- Version code: 2
+- Application ID: `com.aistudio.uzzap.kxvtpm`
+- Minimum Android version: API 24
+- Target Android version: API 36
+
+This repository is an Android application and does not provide a Vercel web route or browser preview.
