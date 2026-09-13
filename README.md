@@ -153,6 +153,3 @@ Before publishing UZZ-APP to Google Play, verify the following:
 
 Keep changes focused, preserve the existing Compose and repository architecture, and add or update tests for behavior that affects authentication, synchronization, persistence, or release configuration.
 
-## License
-
-No license has been declared yet. Contact the repository owner before redistributing or publishing derived work.
