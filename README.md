@@ -54,7 +54,10 @@ UZZ-APP is a Compose-powered Android messenger built for meaningful conversation
 - An Android device or emulator running API 24 or later
 
 > [!NOTE]
-> The repository currently includes Gradle wrapper properties but not the `gradlew` launcher or wrapper JAR. Use a locally installed Gradle 9.3.1 until those files are restored.
+> The repository currently includes Gradle wrapper properties but not the `gradlew`, `gradlew.bat`, or wrapper JAR files. Use a locally installed Gradle 9.3.1 until the wrapper is restored.
+
+> [!WARNING]
+> `app/google-services.json` is intentionally excluded from Git. Each developer and CI environment must provide its own Firebase configuration file.
 
 ### Configure Firebase
 
