@@ -59,7 +59,7 @@ fun SplashScreen(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(22.dp))
 
             Text(
-                text = "UZZAP",
+                text = "UZZ-APP",
                 color = UzzapOrange,
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Black,
@@ -77,7 +77,7 @@ fun SplashScreen(modifier: Modifier = Modifier) {
             CircularProgressIndicator(
                 modifier = Modifier
                     .size(28.dp)
-                    .semantics { contentDescription = "Loading Uzzap" },
+                    .semantics { contentDescription = "Loading UZZ-APP" },
                 color = UzzapOrange,
                 strokeWidth = 3.dp
             )

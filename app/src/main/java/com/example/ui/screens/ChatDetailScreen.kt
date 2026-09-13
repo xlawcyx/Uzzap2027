@@ -89,9 +89,9 @@ import com.example.data.model.MessageEntity
 import com.example.data.model.MessageType
 import com.example.ui.components.ClassicEmoticonMessage
 import com.example.ui.components.ClassicEmoticonPicker
-import com.example.ui.components.UzzapAvatar
+import com.example.ui.components.UZZ-APPAvatar
 import com.example.ui.components.appendClassicEmoticon
-import com.example.ui.theme.UzzapOrange
+import com.example.ui.theme.UZZ-APPOrange
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -184,7 +184,7 @@ fun ChatDetailScreen(
                     }
 
                     if (conversation != null) {
-                        UzzapAvatar(
+                        UZZ-APPAvatar(
                             emoji = conversation.avatarEmoji,
                             bgColor = conversation.avatarBgColor,
                             size = 40
@@ -202,7 +202,7 @@ fun ChatDetailScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "@${conversation.recipientUsername} • Uzzap Mobile",
+                                text = "@${conversation.recipientUsername} • UZZ-APP Mobile",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -210,18 +210,18 @@ fun ChatDetailScreen(
                             )
                         }
 
-                        // Iconic Uzzap BUZZ button in top bar
+                        // Iconic UZZ-APP BUZZ button in top bar
                         IconButton(
                             onClick = onSendBuzz,
                             modifier = Modifier
                                 .clip(CircleShape)
-                                .background(UzzapOrange.copy(alpha = 0.18f))
+                                .background(UZZ-APPOrange.copy(alpha = 0.18f))
                                 .testTag("top_buzz_button")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ElectricBolt,
                                 contentDescription = "Send BUZZ",
-                                tint = UzzapOrange,
+                                tint = UZZ-APPOrange,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -348,7 +348,7 @@ fun ChatDetailScreen(
                                     text = "Replying to ${reply.senderDisplayName}:",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = UzzapOrange
+                                    color = UZZ-APPOrange
                                 )
                                 Text(
                                     text = reply.body,
@@ -398,7 +398,7 @@ fun ChatDetailScreen(
                             Icon(
                                 imageVector = Icons.Default.EmojiEmotions,
                                 contentDescription = "Emoticons",
-                                tint = if (showEmoticons) UzzapOrange else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (showEmoticons) UZZ-APPOrange else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
 
@@ -414,7 +414,7 @@ fun ChatDetailScreen(
                                 Icon(
                                     imageVector = Icons.Default.ElectricBolt,
                                     contentDescription = "Buzz",
-                                    tint = UzzapOrange
+                                    tint = UZZ-APPOrange
                                 )
                             }
                         }
@@ -425,7 +425,7 @@ fun ChatDetailScreen(
                             onValueChange = { inputText = it },
                             placeholder = {
                                 Text(
-                                    text = "Uzzap message...",
+                                    text = "UZZ-APP message...",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -434,7 +434,7 @@ fun ChatDetailScreen(
                             maxLines = 4,
                             shape = RoundedCornerShape(24.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = UzzapOrange,
+                                focusedBorderColor = UZZ-APPOrange,
                                 unfocusedBorderColor = Color.Transparent,
                                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -463,7 +463,7 @@ fun ChatDetailScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .clip(CircleShape)
-                                .background(if (inputText.isNotBlank()) UzzapOrange else Color.LightGray)
+                                .background(if (inputText.isNotBlank()) UZZ-APPOrange else Color.LightGray)
                                 .testTag("send_button")
                         ) {
                             Icon(
@@ -500,7 +500,7 @@ fun ChatDetailScreen(
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            text = "Help keep Uzzap safe. Reports are reviewed under our Community Safety Guidelines.",
+                            text = "Help keep UZZ-APP safe. Reports are reviewed under our Community Safety Guidelines.",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -524,8 +524,8 @@ fun ChatDetailScreen(
                                     onClick = { reportReason = reason },
                                     label = { Text(reason, fontSize = 12.sp) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = UzzapOrange.copy(alpha = 0.2f),
-                                        selectedLabelColor = UzzapOrange
+                                        selectedContainerColor = UZZ-APPOrange.copy(alpha = 0.2f),
+                                        selectedLabelColor = UZZ-APPOrange
                                     ),
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -629,7 +629,7 @@ fun ChatDetailScreen(
                 confirmButton = {
                     Button(
                         onClick = { reportSubmitted = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = UzzapOrange)
+                        colors = ButtonDefaults.buttonColors(containerColor = UZZ-APPOrange)
                     ) {
                         Text("OK")
                     }
@@ -649,7 +649,7 @@ fun MessageBubble(
     val formattedTime = timeFormat.format(Date(message.timestamp))
 
     if (message.type == MessageType.BUZZ) {
-        // Special Uzzap Buzz Banner
+        // Special UZZ-APP Buzz Banner
         Column(
             modifier = modifier
                 .fillMaxWidth()
@@ -668,7 +668,7 @@ fun MessageBubble(
                     Icon(
                         imageVector = Icons.Default.ElectricBolt,
                         contentDescription = "Buzz",
-                        tint = UzzapOrange,
+                        tint = UZZ-APPOrange,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))

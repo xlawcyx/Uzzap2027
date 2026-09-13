@@ -18,7 +18,7 @@ android {
     minSdk = 24
     targetSdk = 36
     versionCode = 2
-    versionName = "1.1.0"
+    versionName = "1.0"
     buildConfigField("boolean", "ALLOW_DEMO_AUTH", "false")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

@@ -161,7 +161,7 @@ class UzzapFirestoreService(
                 ?: return Result.failure(IllegalStateException("Firebase did not create an account."))
             createdUser = authUser
 
-            val finalStatusMsg = if (statusMessage.isBlank()) "Chatting on Uzzap \uD83D\uDCF1" else statusMessage.trim()
+            val finalStatusMsg = if (statusMessage.isBlank()) "Chatting on UZZ-APP \uD83D\uDCF1" else statusMessage.trim()
             val newProfile = UserProfileEntity(
                 id = "me",
                 username = cleanUsername,
@@ -257,7 +257,7 @@ class UzzapFirestoreService(
                 val username = targetDoc.getString("username") ?: cleanInput
                 val displayName = targetDoc.getString("displayName") ?: username
                 val phoneNumber = targetDoc.getString("phoneNumber") ?: ""
-                val statusMsg = targetDoc.getString("statusMessage") ?: "Chatting on Uzzap \uD83D\uDCF1"
+                val statusMsg = targetDoc.getString("statusMessage") ?: "Chatting on UZZ-APP \uD83D\uDCF1"
                 val avatarEmoji = targetDoc.getString("avatarEmoji") ?: "\uD83D\uDE0E"
                 val phoneVerified = targetDoc.getBoolean("phoneVerified") ?: true
                 val vibrationEnabled = targetDoc.getBoolean("vibrationEnabled") ?: true
@@ -756,7 +756,7 @@ class UzzapFirestoreService(
                                 nickname = fromName.split(" ").firstOrNull() ?: fromName,
                                 phoneNumber = "",
                                 presence = UserPresence.ONLINE,
-                                statusMessage = "Wants to connect on Uzzap \uD83D\uDCF1",
+                                statusMessage = "Wants to connect on UZZ-APP \uD83D\uDCF1",
                                 category = ContactCategory.BUDDIES,
                                 friendshipState = FriendshipState.PENDING_INCOMING,
                                 avatarEmoji = "\uD83D\uDE0A",

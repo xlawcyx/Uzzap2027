@@ -235,7 +235,7 @@ class UzzapRepository(
             nickname = displayName.split(" ").firstOrNull() ?: displayName,
             phoneNumber = phoneNumber,
             presence = UserPresence.ONLINE,
-            statusMessage = "Added via Uzzap \uD83D\uDCF1",
+            statusMessage = "Added via UZZ-APP \uD83D\uDCF1",
             category = category,
             friendshipState = FriendshipState.ACCEPTED,
             avatarEmoji = listOf("\uD83D\uDE0A", "\uD83E\uDD17", "\uD83D\uDC36", "\uD83C\uDF89", "\u2B50", "\uD83D\uDCBB").random(),
@@ -438,7 +438,7 @@ class UzzapRepository(
                 phoneNumber = "+63 918 555 1014",
                 password = pin.ifBlank { "password" },
                 avatarEmoji = "😎",
-                statusMessage = "Mabuhay! Connecting on Uzzap 🇵🇭"
+                statusMessage = "Mabuhay! Connecting on UZZ-APP 🇵🇭"
             )
             if (autoSignUpResult.isSuccess) {
                 val user = autoSignUpResult.getOrThrow()
@@ -468,7 +468,7 @@ class UzzapRepository(
                 },
                 phoneNumber = existingProfile?.phoneNumber ?: "+63 918 555 1014",
                 status = UserPresence.ONLINE,
-                statusMessage = existingProfile?.statusMessage ?: "Mabuhay! Connecting on Uzzap 🇵🇭",
+                statusMessage = existingProfile?.statusMessage ?: "Mabuhay! Connecting on UZZ-APP 🇵🇭",
                 avatarEmoji = existingProfile?.avatarEmoji ?: "😎",
                 phoneVerified = true,
                 vibrationEnabled = true
@@ -510,10 +510,10 @@ class UzzapRepository(
         val user = UserProfileEntity(
             id = "me",
             username = cleanUsername.ifBlank { "juandelacruz" },
-            displayName = displayName.trim().ifBlank { "Uzzap User" },
+            displayName = displayName.trim().ifBlank { "UZZ-APP User" },
             phoneNumber = phoneNumber.trim().ifBlank { "+63 918 555 1014" },
             status = UserPresence.ONLINE,
-            statusMessage = if (statusMessage.isBlank()) "Chatting on Uzzap 🇵🇭" else statusMessage.trim(),
+            statusMessage = if (statusMessage.isBlank()) "Chatting on UZZ-APP 🇵🇭" else statusMessage.trim(),
             avatarEmoji = avatarEmoji.ifBlank { "😎" },
             phoneVerified = false,
             vibrationEnabled = true

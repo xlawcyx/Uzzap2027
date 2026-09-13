@@ -163,7 +163,7 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "\"${profile?.statusMessage ?: "Chatting on Uzzap"}\"",
+                            text = "\"${profile?.statusMessage ?: "Chatting on UZZ-APP"}\"",
                             fontSize = 11.sp,
                             color = UzzapOrange,
                             maxLines = 1,
@@ -237,7 +237,7 @@ fun SettingsScreen(
                     SettingSwitchItem(
                         icon = Icons.AutoMirrored.Filled.VolumeUp,
                         title = "Retro Sound Effects & Buzzer",
-                        subtitle = "Play nostalgic Uzzap chime for incoming messages and BUZZ",
+                        subtitle = "Play nostalgic UZZ-APP chime for incoming messages and BUZZ",
                         checked = soundEffectsEnabled,
                         onCheckedChange = onToggleSoundEffects,
                         testTag = "toggle_sound"
@@ -399,7 +399,7 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Real-time synchronization across all Uzzap services and active devices",
+                        text = "Real-time synchronization across all UZZ-APP services and active devices",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -477,7 +477,7 @@ fun SettingsScreen(
                     SettingSwitchItem(
                         icon = Icons.Default.Security,
                         title = "Show Presence to Buddies",
-                        subtitle = "Allow buddies to see when you are active on Uzzap",
+                        subtitle = "Allow buddies to see when you are active on UZZ-APP",
                         checked = presenceVisibility,
                         onCheckedChange = { presenceVisibility = it },
                         testTag = "toggle_presence_visibility"
@@ -523,7 +523,7 @@ fun SettingsScreen(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "Uzzap Mobile",
+                                    text = "UZZ-APP Mobile",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Black,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -602,7 +602,7 @@ fun SettingsScreen(
 
                     // Tribute & Story Description
                     Text(
-                        text = "Crafted with love by Cy for the timeless Filipino mobile chatting community. A modern homage to the legendary Uzzap service originally built with Kolipri on Java ME / MIDP (2004–2012).",
+                        text = "Crafted with love by Cy for the timeless Filipino mobile chatting community. A modern homage to the legendary UZZ-APP service originally built with Kolipri on Java ME / MIDP (2004–2012).",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurface,
                         lineHeight = 18.sp
@@ -713,7 +713,7 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Log Out of Uzzap",
+                            text = "Log Out of UZZ-APP",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
@@ -767,7 +767,7 @@ fun SettingsScreen(
             },
             title = {
                 Text(
-                    text = "Log Out of Uzzap?",
+                    text = "Log Out of UZZ-APP?",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
                 )
@@ -951,7 +951,7 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Uzzap is committed to providing a friendly, nostalgic, and safe community for all chatters.",
+                        text = "UZZ-APP is committed to providing a friendly, nostalgic, and safe community for all chatters.",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -1021,7 +1021,7 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "1. Data Collection & Purpose\nWe collect profile information (username, nickname, status message, mobile number) solely to facilitate peer-to-peer and room communication in Uzzap.",
+                        text = "1. Data Collection & Purpose\nWe collect profile information (username, nickname, status message, mobile number) solely to facilitate peer-to-peer and room communication in UZZ-APP.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
