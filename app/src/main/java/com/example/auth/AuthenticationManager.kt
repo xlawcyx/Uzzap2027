@@ -137,7 +137,7 @@ class AuthenticationManager(
                 val user = authResult.user
 
                 if (user != null) {
-                    Log.d(TAG, "Google Sign-In successful for user: ${user.email}")
+                    Log.d(TAG, "Google Sign-In successful")
                     AuthResultState.Success(user)
                 } else {
                     AuthResultState.Error("Failed to retrieve user from Firebase.")

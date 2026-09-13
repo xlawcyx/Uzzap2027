@@ -67,11 +67,17 @@ interface ContactDao {
     @Query("UPDATE contacts SET friendshipState = :state WHERE id = :id")
     suspend fun updateFriendshipState(id: String, state: FriendshipState)
 
+    @Query("UPDATE contacts SET friendshipState = :state WHERE username = :username")
+    suspend fun updateFriendshipStateByUsername(username: String, state: FriendshipState)
+
     @Query("UPDATE contacts SET isFavorite = NOT isFavorite WHERE id = :id")
     suspend fun toggleFavorite(id: String)
 
     @Query("DELETE FROM contacts WHERE id = :id")
     suspend fun deleteContact(id: String)
+
+    @Query("DELETE FROM contacts WHERE username = :username")
+    suspend fun deleteContactByUsername(username: String)
 }
 
 @Dao

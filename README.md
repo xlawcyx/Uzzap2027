@@ -50,11 +50,10 @@ UZZ-APP is a Compose-powered Android messenger built for meaningful conversation
 
 - JDK 21
 - Android SDK Platform 36 and Build Tools 36.x
-- Gradle 9.3.1 or Android Studio with an equivalent Gradle setup
 - An Android device or emulator running API 24 or later
 
 > [!NOTE]
-> The repository currently includes Gradle wrapper properties but not the `gradlew`, `gradlew.bat`, or wrapper JAR files. Use a locally installed Gradle 9.3.1 until the wrapper is restored.
+> The checked-in Gradle wrapper downloads and runs the required Gradle 9.3.1 version.
 
 > [!WARNING]
 > `app/google-services.json` is intentionally excluded from Git. Each developer and CI environment must provide its own Firebase configuration file.
@@ -89,7 +88,7 @@ the rules to perform this migration from an Android client.
 ### Build and run
 
 ```bash
-gradle :app:assembleDebug
+./gradlew :app:assembleDebug
 ```
 
 The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`. Install it through Android Studio or with ADB:
@@ -102,7 +101,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 <summary><strong>Building on a memory-constrained machine</strong></summary>
 
 ```bash
-gradle --no-daemon --no-configuration-cache \
+./gradlew --no-daemon --no-configuration-cache \
   -Dorg.gradle.jvmargs='-Xmx2g -Dfile.encoding=UTF-8' \
   -Dorg.gradle.workers.max=1 \
   -Dorg.gradle.parallel=false \
@@ -155,4 +154,3 @@ Before publishing UZZ-APP to Google Play, verify the following:
 ## Contributing
 
 Keep changes focused, preserve the existing Compose and repository architecture, and add or update tests for behavior that affects authentication, synchronization, persistence, or release configuration.
-

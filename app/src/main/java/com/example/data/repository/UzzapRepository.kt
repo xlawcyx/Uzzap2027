@@ -14,7 +14,10 @@ import com.example.data.model.RoomRole
 import com.example.data.model.UserPresence
 import com.example.data.model.UserProfileEntity
 import com.example.data.remote.firestore.FirestoreSyncStatus
+import com.example.data.remote.firestore.FriendRequestStatus
 import com.example.data.remote.firestore.UzzapFirestoreService
+import com.example.data.remote.firestore.directConversationId
+import com.example.data.remote.firestore.normalizeUsername
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -144,11 +147,25 @@ class UzzapRepository(
                 }
 
                 // 5. Listen to incoming friend requests from Firestore
-                firestoreService.listenToFriendRequests(myUsername) { newContact ->
+                firestoreService.listenToFriendRequests { newContact ->
                     scope.launch(Dispatchers.IO) {
                         val existing = contactDao.getContactByUsername(newContact.username)
                         if (existing == null) {
                             contactDao.insertContact(newContact)
+                        }
+                    }
+                }
+
+                // 6. Reflect the recipient's response in the sender's local buddy list.
+                firestoreService.listenToOutgoingFriendRequests { username, status ->
+                    scope.launch(Dispatchers.IO) {
+                        when (status) {
+                            FriendRequestStatus.PENDING -> Unit
+                            FriendRequestStatus.ACCEPTED -> contactDao.updateFriendshipStateByUsername(
+                                username,
+                                FriendshipState.ACCEPTED
+                            )
+                            FriendRequestStatus.DECLINED -> contactDao.deleteContactByUsername(username)
                         }
                     }
                 }
@@ -211,10 +228,16 @@ class UzzapRepository(
     }
 
     suspend fun acceptFriendRequest(contactId: String) {
+        val contact = contactDao.getContactById(contactId) ?: return
+        val myUsername = userDao.getProfile()?.username ?: return
+        firestoreService.respondToFriendRequest(contact.username, myUsername, accepted = true).getOrThrow()
         contactDao.updateFriendshipState(contactId, FriendshipState.ACCEPTED)
     }
 
     suspend fun declineFriendRequest(contactId: String) {
+        val contact = contactDao.getContactById(contactId) ?: return
+        val myUsername = userDao.getProfile()?.username ?: return
+        firestoreService.respondToFriendRequest(contact.username, myUsername, accepted = false).getOrThrow()
         contactDao.deleteContact(contactId)
     }
 
@@ -228,30 +251,39 @@ class UzzapRepository(
         phoneNumber: String,
         category: ContactCategory
     ) {
+        val cleanUsername = normalizeUsername(username)
+        val cloudEnabled = com.example.UzzapApplication.isRealFirebaseConfigured
         val newContact = ContactEntity(
-            id = "contact_${UUID.randomUUID().toString().take(8)}",
-            username = username.lowercase().trim(),
+            id = "contact_$cleanUsername",
+            username = cleanUsername,
             displayName = displayName.trim(),
             nickname = displayName.split(" ").firstOrNull() ?: displayName,
             phoneNumber = phoneNumber,
             presence = UserPresence.ONLINE,
             statusMessage = "Added via UZZ-APP \uD83D\uDCF1",
             category = category,
-            friendshipState = FriendshipState.ACCEPTED,
+            friendshipState = if (cloudEnabled) {
+                FriendshipState.PENDING_OUTGOING
+            } else {
+                FriendshipState.ACCEPTED
+            },
             avatarEmoji = listOf("\uD83D\uDE0A", "\uD83E\uDD17", "\uD83D\uDC36", "\uD83C\uDF89", "\u2B50", "\uD83D\uDCBB").random(),
             avatarBgColor = listOf(0xFFE91E63, 0xFF3F51B5, 0xFF009688, 0xFFFF9800, 0xFF673AB7).random()
         )
-        contactDao.insertContact(newContact)
-
-        // Sync friend request to Firestore
         val myProfile = userDao.getProfile()
-        if (myProfile != null) {
-            firestoreService.sendFriendRequest(myProfile, username.lowercase().trim())
+        if (cloudEnabled) {
+            checkNotNull(myProfile) { "Complete your profile before adding a buddy." }
+            firestoreService.sendFriendRequest(myProfile, cleanUsername).getOrThrow()
+        } else if (!com.example.BuildConfig.ALLOW_DEMO_AUTH) {
+            throw IllegalStateException("Cloud connection is required to add a buddy.")
         }
+        contactDao.insertContact(newContact)
     }
 
     suspend fun startOrGetConversation(contact: ContactEntity): String {
-        val convoId = "convo_${contact.username}"
+        val myUsername = userDao.getProfile()?.username
+            ?: throw IllegalStateException("Complete your profile before starting a conversation.")
+        val convoId = directConversationId(myUsername, contact.username)
         val existing = conversationDao.getConversationById(convoId)
         if (existing != null) {
             return existing.id
@@ -304,6 +336,7 @@ class UzzapRepository(
             msgId,
             if (result.isSuccess) MessageDeliveryStatus.SENT else MessageDeliveryStatus.FAILED
         )
+        result.getOrThrow()
     }
 
     suspend fun sendBuzz(conversationId: String) {
@@ -336,6 +369,7 @@ class UzzapRepository(
             msgId,
             if (result.isSuccess) MessageDeliveryStatus.SENT else MessageDeliveryStatus.FAILED
         )
+        result.getOrThrow()
     }
 
     suspend fun markConversationRead(conversationId: String) {
@@ -370,8 +404,11 @@ class UzzapRepository(
             isSystem = true
         )
         chatroomDao.insertRoomMessage(systemNotice)
-        firestoreService.sendRoomMessage(roomId, systemNotice)
-        firestoreService.updateRoomChatterCount(roomId, if (join) 1 else -1)
+        firestoreService.sendRoomMembershipChange(
+            roomId,
+            systemNotice,
+            if (join) 1 else -1
+        ).getOrThrow()
     }
 
     suspend fun sendRoomMessage(roomId: String, text: String) {
@@ -389,7 +426,7 @@ class UzzapRepository(
             isSystem = false
         )
         chatroomDao.insertRoomMessage(msg)
-        firestoreService.sendRoomMessage(roomId, msg)
+        firestoreService.sendRoomMessage(roomId, msg).getOrThrow()
     }
 
     suspend fun createChatroom(name: String, topic: String, category: String) {
@@ -416,7 +453,7 @@ class UzzapRepository(
         )
         chatroomDao.insertRoomMessage(welcomeMsg)
 
-        firestoreService.createChatroom(newRoom)
+        firestoreService.createChatroom(newRoom).getOrThrow()
     }
 
     suspend fun signIn(usernameOrPhone: String, pin: String): Result<UserProfileEntity> {
@@ -431,7 +468,10 @@ class UzzapRepository(
         val cleanInput = usernameOrPhone.trim().lowercase().replace("@uzzap.ph", "")
 
         // If connected to live Firebase and demo user doesn't exist yet, auto-provision on Firebase
-        if (com.example.UzzapApplication.isRealFirebaseConfigured && cleanInput == "juandelacruz") {
+        if (com.example.BuildConfig.ALLOW_DEMO_AUTH &&
+            com.example.UzzapApplication.isRealFirebaseConfigured &&
+            cleanInput == "juandelacruz"
+        ) {
             val autoSignUpResult = firestoreService.signUpWithFirestore(
                 username = "juandelacruz",
                 displayName = "Juan Dela Cruz",
@@ -448,7 +488,7 @@ class UzzapRepository(
             }
         }
 
-        if (com.example.UzzapApplication.isRealFirebaseConfigured) {
+        if (com.example.UzzapApplication.isRealFirebaseConfigured || !com.example.BuildConfig.ALLOW_DEMO_AUTH) {
             return result
         }
 
@@ -501,7 +541,7 @@ class UzzapRepository(
             return result
         }
 
-        if (com.example.UzzapApplication.isRealFirebaseConfigured) {
+        if (com.example.UzzapApplication.isRealFirebaseConfigured || !com.example.BuildConfig.ALLOW_DEMO_AUTH) {
             return result
         }
 
@@ -529,14 +569,14 @@ class UzzapRepository(
     suspend fun submitReport(target: String, reason: String, details: String) {
         val myProfile = userDao.getProfile()
         val myUsername = myProfile?.username ?: "anonymous"
-        firestoreService.submitReport(myUsername, target, reason, details)
+        firestoreService.submitReport(myUsername, target, reason, details).getOrThrow()
     }
 
-    suspend fun deleteAccountData() {
+    suspend fun deleteAccountData(password: String) {
         val myProfile = userDao.getProfile()
         val myUsername = myProfile?.username
         if (myUsername != null) {
-            firestoreService.deleteUserCloudData(myUsername).getOrThrow()
+            firestoreService.deleteUserCloudData(myUsername, password).getOrThrow()
         }
         database.clearAllTables()
     }

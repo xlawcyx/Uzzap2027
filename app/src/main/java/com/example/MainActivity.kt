@@ -46,6 +46,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -199,6 +201,7 @@ fun UzzapApp(
     val pendingRequestsCount = pendingRequests.size
     val authLoading by viewModel.authLoading.collectAsStateWithLifecycle()
     val authError by viewModel.authError.collectAsStateWithLifecycle()
+    val operationMessage by viewModel.operationMessage.collectAsStateWithLifecycle()
 
     if (!isLoggedIn) {
         LoginScreen(
@@ -222,9 +225,18 @@ fun UzzapApp(
     }
     val showAppChrome = appScreen == AppScreen.TABS
     val tabStateHolder = rememberSaveableStateHolder()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(operationMessage) {
+        operationMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearOperationMessage()
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             AnimatedVisibility(
                 visible = showAppChrome,
@@ -577,7 +589,7 @@ fun UzzapApp(
                                     onSyncNowClick = { viewModel.syncProfileWithCloud() },
                                     onNavigateToProfile = { viewModel.setTab(MainTab.PROFILE) },
                                     onLogoutClick = { viewModel.logout(context) },
-                                    onDeleteAccount = { viewModel.deleteAccount(context) }
+                                    onDeleteAccount = { password -> viewModel.deleteAccount(password) }
                                 )
                             }
                             }

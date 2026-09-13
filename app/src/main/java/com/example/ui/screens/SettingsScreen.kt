@@ -74,6 +74,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -103,11 +104,12 @@ fun SettingsScreen(
     onSyncNowClick: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
-    onDeleteAccount: () -> Unit = {},
+    onDeleteAccount: (password: String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var deletionPassword by remember { mutableStateOf("") }
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showCommunityGuidelinesDialog by remember { mutableStateOf(false) }
     var showClearCacheDialog by remember { mutableStateOf(false) }
@@ -862,7 +864,10 @@ fun SettingsScreen(
     // Delete Account Dialog (Store Compliance: Easy and transparent account deletion)
     if (showDeleteAccountDialog) {
         AlertDialog(
-            onDismissRequest = { showDeleteAccountDialog = false },
+            onDismissRequest = {
+                showDeleteAccountDialog = false
+                deletionPassword = ""
+            },
             icon = {
                 Icon(
                     imageVector = Icons.Default.DeleteForever,
@@ -887,10 +892,25 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "This action will:\n• Delete your user profile (@${profile?.username ?: "user"}) from Firebase Firestore\n• Erase chat history, messages, contacts, and preferences stored on this device\n• Cloud messages sent to other users may remain in their accounts\n• This action cannot be reversed.",
+                        text = "This action will:\n• Delete your user profile (@${profile?.username ?: "user"}) from Firebase Firestore\n• Remove shared cloud conversation history and your room messages\n• Erase messages, contacts, and preferences stored on this device\n• This action cannot be reversed.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 17.sp
+                    )
+                    OutlinedTextField(
+                        value = deletionPassword,
+                        onValueChange = { deletionPassword = it },
+                        label = { Text("Current password") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("delete_account_password")
+                    )
+                    Text(
+                        text = "Reauthentication is required before any cloud data is removed.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             },
@@ -898,8 +918,10 @@ fun SettingsScreen(
                 Button(
                     onClick = {
                         showDeleteAccountDialog = false
-                        onDeleteAccount()
+                        onDeleteAccount(deletionPassword)
+                        deletionPassword = ""
                     },
+                    enabled = deletionPassword.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError
@@ -912,7 +934,10 @@ fun SettingsScreen(
             },
             dismissButton = {
                 OutlinedButton(
-                    onClick = { showDeleteAccountDialog = false },
+                    onClick = {
+                        showDeleteAccountDialog = false
+                        deletionPassword = ""
+                    },
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.testTag("cancel_delete_account_button")
                 ) {
