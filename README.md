@@ -156,17 +156,3 @@ Before publishing UZZ-APP to Google Play, verify the following:
 
 Keep changes focused, preserve the existing Compose and repository architecture, and add or update tests for behavior that affects authentication, synchronization, persistence, or release configuration.
 
-## License
-
-No license file is currently present on `main`. Add the approved license before redistributing or publishing derived work.
-
-## Current release
-
-- App name: UZZ-APP
-- Version name: 1.0
-- Version code: 2
-- Application ID: `com.aistudio.uzzap.kxvtpm`
-- Minimum Android version: API 24
-- Target Android version: API 36
-
-This repository is an Android application and does not provide a Vercel web route or browser preview.
