@@ -18,6 +18,7 @@ import com.example.data.model.UserProfileEntity
 import com.example.data.remote.firestore.FirestoreSyncStatus
 import com.example.data.repository.UzzapRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -86,6 +87,9 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _authError = MutableStateFlow<String?>(null)
     val authError: StateFlow<String?> = _authError.asStateFlow()
+
+    private val _operationMessage = MutableStateFlow<String?>(null)
+    val operationMessage: StateFlow<String?> = _operationMessage.asStateFlow()
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
@@ -298,19 +302,19 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun acceptFriendRequest(contactId: String) {
-        viewModelScope.launch {
+        launchOperation("Could not accept the friend request") {
             repository.acceptFriendRequest(contactId)
         }
     }
 
     fun declineFriendRequest(contactId: String) {
-        viewModelScope.launch {
+        launchOperation("Could not decline the friend request") {
             repository.declineFriendRequest(contactId)
         }
     }
 
     fun addContact(username: String, displayName: String, phone: String, category: ContactCategory) {
-        viewModelScope.launch {
+        launchOperation("Could not send the friend request") {
             repository.addContact(username, displayName, phone, category)
             _isAddContactDialogOpen.value = false
         }
@@ -319,20 +323,20 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
     fun sendMessage(text: String, replyTo: String? = null) {
         val convoId = _activeConversationId.value ?: return
         if (text.isBlank()) return
-        viewModelScope.launch {
+        launchOperation("Message could not be sent") {
             repository.sendMessage(convoId, text, replyTo)
         }
     }
 
     fun sendBuzz() {
         val convoId = _activeConversationId.value ?: return
-        viewModelScope.launch {
+        launchOperation("BUZZ could not be sent") {
             repository.sendBuzz(convoId)
         }
     }
 
     fun joinOrLeaveRoom(roomId: String, join: Boolean) {
-        viewModelScope.launch {
+        launchOperation("Room membership could not be updated") {
             repository.joinOrLeaveRoom(roomId, join)
         }
     }
@@ -340,13 +344,13 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
     fun sendRoomMessage(text: String) {
         val roomId = _activeRoomId.value ?: return
         if (text.isBlank()) return
-        viewModelScope.launch {
+        launchOperation("Room message could not be sent") {
             repository.sendRoomMessage(roomId, text)
         }
     }
 
     fun createChatroom(name: String, topic: String, category: String) {
-        viewModelScope.launch {
+        launchOperation("Chatroom could not be created") {
             repository.createChatroom(name, topic, category)
             _isCreateRoomDialogOpen.value = false
         }
@@ -383,6 +387,10 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearAuthError() {
         _authError.value = null
+    }
+
+    fun clearOperationMessage() {
+        _operationMessage.value = null
     }
 
     fun signIn(usernameOrPhone: String, pin: String) {
@@ -434,7 +442,7 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun submitReport(target: String, reason: String, details: String) {
-        viewModelScope.launch {
+        launchOperation("Report could not be submitted") {
             repository.submitReport(target, reason, details)
         }
     }
@@ -445,16 +453,19 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
             if (contact != null) {
                 repository.deleteContact(contact.id)
             }
-            if (_activeConversationId.value == "convo_$username") {
+            val blockedConversationId = conversations.value
+                .firstOrNull { it.recipientUsername == username }
+                ?.id
+            if (_activeConversationId.value == blockedConversationId) {
                 _activeConversationId.value = null
             }
         }
     }
 
-    fun deleteAccount(context: Context) {
+    fun deleteAccount(password: String) {
         viewModelScope.launch {
             try {
-                repository.deleteAccountData()
+                repository.deleteAccountData(password)
                 prefs.edit { clear() }
                 settingsPrefs.edit { clear() }
                 _isLoggedIn.value = false
@@ -463,7 +474,23 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
                 _activeRoomId.value = null
             } catch (e: Exception) {
                 android.util.Log.e("UzzapViewModel", "Error deleting account", e)
-                _authError.value = e.message ?: "Account deletion failed. Please try again."
+                _operationMessage.value = e.message ?: "Account deletion failed. Please try again."
+            }
+        }
+    }
+
+    private fun launchOperation(
+        failureMessage: String,
+        operation: suspend () -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                operation()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                android.util.Log.e("UzzapViewModel", failureMessage, error)
+                _operationMessage.value = "$failureMessage: ${error.localizedMessage ?: "please try again."}"
             }
         }
     }
