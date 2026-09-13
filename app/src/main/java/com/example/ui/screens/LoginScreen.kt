@@ -191,9 +191,13 @@ fun LoginScreen(
             // Cloud / Offline Status Pill
             val isCloudActive = com.example.UzzapApplication.isRealFirebaseConfigured
             Surface(
-                color = if (isCloudActive) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
+                color = if (isCloudActive) {
+                    MaterialTheme.colorScheme.secondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.primaryContainer
+                },
                 shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, if (isCloudActive) Color(0xFFC8E6C9) else Color(0xFFFFE0B2))
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
@@ -202,7 +206,11 @@ fun LoginScreen(
                     Icon(
                         imageVector = if (isCloudActive) Icons.Default.CloudDone else Icons.Default.Phone,
                         contentDescription = null,
-                        tint = if (isCloudActive) Color(0xFF2E7D32) else UzzapOrange,
+                        tint = if (isCloudActive) {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        },
                         modifier = Modifier.size(13.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -210,7 +218,11 @@ fun LoginScreen(
                         text = if (isCloudActive) "Firestore Cloud Active • uzzap2027" else "UZZ-APP MIDP 2.0 • Offline & Local Ready",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isCloudActive) Color(0xFF2E7D32) else UzzapOrange
+                        color = if (isCloudActive) {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        }
                     )
                 }
             }

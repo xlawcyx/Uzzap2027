@@ -56,7 +56,7 @@ class RoomDetailEmoticonsTest {
     }
 
     @Test
-    fun `standalone room emoticon renders as an image inside its bubble`() {
+    fun `standalone room emoticon renders as an image inside its message row`() {
         val emoticon = CLASSIC_EMOTICONS.first()
         val message = RoomMessageEntity(
             id = "message_1",

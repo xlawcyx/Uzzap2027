@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
@@ -80,6 +81,8 @@ import com.example.ui.theme.UzzapOrange
 fun SettingsScreen(
     profile: UserProfileEntity?,
     firestoreSyncStatus: FirestoreSyncStatus = FirestoreSyncStatus.CONNECTED,
+    isDarkMode: Boolean = false,
+    onDarkModeChange: (Boolean) -> Unit = {},
     onToggleVibration: (Boolean) -> Unit = {},
     onClearChatCache: () -> Unit = {},
     onSyncNowClick: () -> Unit = {},
@@ -118,7 +121,7 @@ fun SettingsScreen(
                 ) {
                     UzzapAvatar(
                         emoji = profile?.avatarEmoji ?: "😎",
-                        bgColor = 0xFFFF5722,
+                        bgColor = 0xFF31844D,
                         presence = profile?.status,
                         size = 54
                     )
@@ -171,7 +174,7 @@ fun SettingsScreen(
             }
         }
 
-        // 2. Alerts, Vibration & Haptics (Moved from Profile + Enhanced)
+        // 2. Appearance, Alerts, Vibration & Haptics
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -181,7 +184,7 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "ALERTS, BUZZ & VIBRATION",
+                        text = "APPEARANCE, ALERTS & BUZZ",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -197,6 +200,24 @@ fun SettingsScreen(
                         checked = profile?.vibrationEnabled ?: true,
                         onCheckedChange = onToggleVibration,
                         testTag = "toggle_vibration"
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+
+                    SettingSwitchItem(
+                        icon = Icons.Default.DarkMode,
+                        title = "Dark Mode",
+                        subtitle = if (isDarkMode) {
+                            "Black backgrounds are active"
+                        } else {
+                            "Use black backgrounds throughout the app"
+                        },
+                        checked = isDarkMode,
+                        onCheckedChange = onDarkModeChange,
+                        testTag = "toggle_dark_mode"
                     )
 
                 }
@@ -349,7 +370,7 @@ fun SettingsScreen(
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = UzzapCyan,
-                            contentColor = Color.White
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Icon(
@@ -1026,7 +1047,7 @@ private fun CloudFeatureItem(text: String) {
         Icon(
             imageVector = Icons.Default.CheckCircle,
             contentDescription = null,
-            tint = Color(0xFF2E7D32),
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))

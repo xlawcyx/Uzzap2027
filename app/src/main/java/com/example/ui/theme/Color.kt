@@ -2,37 +2,47 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Uzzap Iconic Color Palette (Vibrant Orange, Deep Midnight Navy, Slate & Electric Cyan)
-val UzzapOrange = Color(0xFFFF5722)
-val UzzapOrangeDark = Color(0xFFE64A19)
-val UzzapOrangeLight = Color(0xFFFFCCBC)
-val UzzapOrangeContainer = Color(0xFFFFECE5)
+// Forest palette: deep foliage, pale sage, and fresh leaf green.
+// Balanced to retain at least 4.5:1 contrast against both white and black canvases.
+val ForestGreen = Color(0xFF31844D)
+val ForestGreenDark = Color(0xFF1F5B35)
+val ForestLeaf = Color(0xFF70B65A)
+val ForestSage = Color(0xFFE7F0DF)
 
-val UzzapNavy = Color(0xFF0A1128)
-val UzzapNavyCard = Color(0xFF131F3F)
-val UzzapNavySurface = Color(0xFF1E293B)
-val UzzapNavyBorder = Color(0xFF334155)
+// Compatibility names used throughout the existing UI now resolve to Forest colors.
+val UzzapOrange = ForestGreen
+val UzzapOrangeDark = ForestGreenDark
+val UzzapOrangeLight = ForestLeaf
+val UzzapOrangeContainer = ForestSage
 
-val UzzapCyan = Color(0xFF00B4D8)
-val UzzapCyanContainer = Color(0xFFE0F7FA)
+val UzzapNavy = Color(0xFF0E1A12)
+val UzzapNavyCard = Color(0xFF172A1D)
+val UzzapNavySurface = Color(0xFF213927)
+val UzzapNavyBorder = Color(0xFF3B5B43)
+
+// Legacy accent name. Use the deeper green so white icon/text pairings stay accessible.
+val UzzapCyan = ForestGreen
+val UzzapCyanContainer = ForestSage
 
 // Presence Colors
-val PresenceOnline = Color(0xFF10B981)
+val PresenceOnline = ForestGreen
 val PresenceAway = Color(0xFFF59E0B)
 val PresenceBusy = Color(0xFFEF4444)
 val PresenceOffline = Color(0xFF94A3B8)
 
 // Neutral Canvas
-val BackgroundLight = Color(0xFFF8FAFC)
+val BackgroundLight = Color(0xFFFFFFFF)
 val SurfaceLight = Color(0xFFFFFFFF)
-val SurfaceVariantLight = Color(0xFFF1F5F9)
-val TextPrimary = Color(0xFF0F172A)
-val TextSecondary = Color(0xFF64748B)
-val TextMuted = Color(0xFF94A3B8)
-val BorderLight = Color(0xFFE2E8F0)
+val SurfaceVariantLight = ForestSage
+val TextPrimary = Color(0xFF17231A)
+val TextSecondary = Color(0xFF536457)
+val TextMuted = Color(0xFF647568)
+val BorderLight = Color(0xFF7F9283)
 
-// Bubbles
-val BubbleSelf = Color(0xFFFF5722)
-val BubbleOther = Color(0xFFF1F5F9)
-val BubbleBuzz = Color(0xFFFFEDD5)
-
+// Dark surfaces stay neutral black while controls retain the Forest identity.
+val BackgroundDark = Color(0xFF000000)
+val SurfaceDark = Color(0xFF000000)
+val SurfaceVariantDark = Color(0xFF17231A)
+val TextPrimaryDark = Color(0xFFF2F6F0)
+val TextSecondaryDark = Color(0xFFC7D4C5)
+val BorderDark = Color(0xFF8AA28D)

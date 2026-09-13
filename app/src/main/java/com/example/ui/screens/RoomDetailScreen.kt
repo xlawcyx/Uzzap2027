@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -44,14 +43,13 @@ import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -178,7 +176,7 @@ fun RoomDetailScreen(
                     Text(
                         text = "${room?.chatterCount ?: 0} online • ${room?.category ?: ""}",
                         fontSize = 11.sp,
-                        color = Color(0xFF10B981),
+                        color = UzzapOrange,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -192,13 +190,13 @@ fun RoomDetailScreen(
                             onClick = { onToggleJoin(false) },
                             shape = RoundedCornerShape(8.dp),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.7f)),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.7f)),
                             modifier = Modifier.testTag("room_detail_leave_button")
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Logout,
                                 contentDescription = "Leave Room",
-                                tint = Color(0xFFEF4444),
+                                tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
@@ -206,7 +204,7 @@ fun RoomDetailScreen(
                                 text = "Leave",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFFEF4444)
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                     } else {
@@ -344,6 +342,7 @@ fun RoomDetailScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(horizontal = 12.dp),
             contentPadding = PaddingValues(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -479,13 +478,20 @@ fun RoomDetailScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(if (inputText.isNotBlank()) UzzapOrange else Color.LightGray)
+                        .background(
+                            if (inputText.isNotBlank()) UzzapOrange
+                            else MaterialTheme.colorScheme.surfaceVariant
+                        )
                         .testTag("send_room_message_button")
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send",
-                        tint = MaterialTheme.colorScheme.onPrimary,
+                        tint = if (inputText.isNotBlank()) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -590,26 +596,15 @@ fun RoomMessageItem(
         val isJoin = lowerText.contains("join") || lowerText.contains("joins") || lowerText.contains("joined")
         val isLeave = lowerText.contains("left") || lowerText.contains("leave") || lowerText.contains("leaves")
 
-        val containerColor = when {
-            isJoin -> MaterialTheme.colorScheme.secondaryContainer
-            isLeave -> MaterialTheme.colorScheme.errorContainer
-            else -> MaterialTheme.colorScheme.surfaceVariant
-        }
-
-        val borderColor = when {
-            isJoin || isLeave -> Color.Transparent
-            else -> MaterialTheme.colorScheme.outlineVariant
-        }
-
         val textColor = when {
-            isJoin -> MaterialTheme.colorScheme.onSecondaryContainer
-            isLeave -> MaterialTheme.colorScheme.onErrorContainer
+            isJoin -> MaterialTheme.colorScheme.primary
+            isLeave -> MaterialTheme.colorScheme.error
             else -> MaterialTheme.colorScheme.onSurfaceVariant
         }
 
         val iconTint = when {
-            isJoin -> Color(0xFF2E7D32)
-            isLeave -> Color(0xFFC62828)
+            isJoin -> MaterialTheme.colorScheme.primary
+            isLeave -> MaterialTheme.colorScheme.error
             else -> UzzapOrange
         }
 
@@ -619,122 +614,70 @@ fun RoomMessageItem(
             else -> Icons.Default.Info
         }
 
-        Box(
+        Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            contentAlignment = Alignment.Center
+                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .testTag("system_indicator_${message.id}"),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Surface(
-                color = containerColor,
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, borderColor),
-                modifier = Modifier.testTag("system_indicator_${message.id}")
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
-                ) {
-                    Icon(
-                        imageVector = iconVector,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(13.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = message.message,
-                        fontSize = 11.sp,
-                        fontWeight = if (isJoin || isLeave) FontWeight.SemiBold else FontWeight.Medium,
-                        color = textColor
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "• $formattedTime",
-                        fontSize = 9.sp,
-                        color = textColor.copy(alpha = 0.75f)
-                    )
-                }
-            }
+            Icon(
+                imageVector = iconVector,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(13.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = message.message,
+                fontSize = 11.sp,
+                fontWeight = if (isJoin || isLeave) FontWeight.SemiBold else FontWeight.Medium,
+                color = textColor
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "• $formattedTime",
+                fontSize = 9.sp,
+                color = textColor.copy(alpha = 0.75f)
+            )
         }
         return
     }
 
     val isMe = message.isFromMe
-    val alignment = if (isMe) Alignment.End else Alignment.Start
-    val bubbleColor = if (isMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-    val textColor = if (isMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-    val timestampColor = if (isMe) {
-        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-        horizontalAlignment = alignment
+            .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
-        // Sender Info
-        if (!isMe) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
-            ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = if (isMe) "You" else message.senderUsername,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = UzzapOrange
+            )
+            if (message.senderRole != RoomRole.MEMBER) {
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = message.senderUsername,
-                    fontSize = 12.sp,
+                    text = message.senderRole.title.uppercase(),
+                    fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     color = UzzapOrange
                 )
-
-                if (message.senderRole != RoomRole.MEMBER) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Surface(
-                        color = UzzapOrange.copy(alpha = 0.18f),
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text(
-                            text = message.senderRole.title,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = UzzapOrange,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                        )
-                    }
-                }
             }
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = formattedTime,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = bubbleColor),
-            border = if (isMe) null else androidx.compose.foundation.BorderStroke(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant
-            ),
-            shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 16.dp,
-                bottomStart = if (isMe) 16.dp else 4.dp,
-                bottomEnd = if (isMe) 4.dp else 16.dp
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            modifier = Modifier.widthIn(max = 290.dp)
-        ) {
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                ClassicEmoticonMessage(
-                    message = message.message,
-                    color = textColor
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = formattedTime,
-                    fontSize = 10.sp,
-                    color = timestampColor,
-                    modifier = Modifier.align(Alignment.End)
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(3.dp))
+        ClassicEmoticonMessage(message = message.message, color = MaterialTheme.colorScheme.onSurface)
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }

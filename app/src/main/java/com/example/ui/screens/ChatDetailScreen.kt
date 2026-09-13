@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -50,14 +49,13 @@ import androidx.compose.material.icons.filled.ReportProblem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -290,7 +288,7 @@ fun ChatDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(messages, key = { it.id }) { message ->
-                    MessageBubble(
+                    DirectMessageItem(
                         message = message,
                         onReplyClick = { replyToMessage = message }
                     )
@@ -462,13 +460,20 @@ fun ChatDetailScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .clip(CircleShape)
-                                .background(if (inputText.isNotBlank()) UzzapOrange else Color.LightGray)
+                                .background(
+                                    if (inputText.isNotBlank()) UzzapOrange
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                )
                                 .testTag("send_button")
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Send",
-                                tint = MaterialTheme.colorScheme.onPrimary,
+                                tint = if (inputText.isNotBlank()) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -610,7 +615,7 @@ fun ChatDetailScreen(
 }
 
 @Composable
-fun MessageBubble(
+fun DirectMessageItem(
     message: MessageEntity,
     onReplyClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -619,184 +624,109 @@ fun MessageBubble(
     val formattedTime = timeFormat.format(Date(message.timestamp))
 
     if (message.type == MessageType.BUZZ) {
-        // Special UZZ-APP Buzz Banner
-        Column(
+        Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .padding(horizontal = 16.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ElectricBolt,
-                        contentDescription = "Buzz",
-                        tint = UzzapOrange,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (message.isFromMe) "You sent a BUZZ!" else "${message.senderDisplayName} BUZZED YOU!",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = formattedTime,
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
-                    )
-                }
-            }
+            Icon(
+                imageVector = Icons.Default.ElectricBolt,
+                contentDescription = "Buzz",
+                tint = UzzapOrange,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = if (message.isFromMe) "You sent a BUZZ!" else "${message.senderDisplayName} BUZZED YOU!",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = formattedTime,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+            )
         }
         return
-    }
-
-    // Normal Text Message Bubble
-    val alignment = if (message.isFromMe) Alignment.End else Alignment.Start
-    val bubbleColor = if (message.isFromMe) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant
-    }
-    val textColor = if (message.isFromMe) {
-        MaterialTheme.colorScheme.onPrimary
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    val timestampColor = if (message.isFromMe) {
-        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-        horizontalAlignment = alignment
+            .clickable(onClick = onReplyClick)
+            .padding(horizontal = 10.dp, vertical = 7.dp)
     ) {
-        Card(
-            onClick = onReplyClick,
-            colors = CardDefaults.cardColors(containerColor = bubbleColor),
-            border = if (message.isFromMe) null else androidx.compose.foundation.BorderStroke(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant
-            ),
-            shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 16.dp,
-                bottomStart = if (message.isFromMe) 16.dp else 4.dp,
-                bottomEnd = if (message.isFromMe) 4.dp else 16.dp
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            modifier = Modifier.widthIn(max = 290.dp)
-        ) {
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                // Reply quote if any
-                if (message.replyToBody != null) {
-                    Surface(
-                        color = if (message.isFromMe) {
-                            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
-                        } else {
-                            MaterialTheme.colorScheme.surface
-                        },
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 6.dp)
-                    ) {
-                        Text(
-                            text = message.replyToBody,
-                            fontSize = 11.sp,
-                            color = if (message.isFromMe) {
-                                MaterialTheme.colorScheme.onPrimary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            },
-                            maxLines = 2,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-
-                // Message text and bundled classic emoticons
-                ClassicEmoticonMessage(
-                    message = message.body,
-                    color = textColor,
-                    lineHeight = 24.sp
-                )
-
-                Spacer(modifier = Modifier.height(3.dp))
-
-                // Timestamp and Delivery Status
-                Row(
-                    modifier = Modifier.align(Alignment.End),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = formattedTime,
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = if (message.isFromMe) "You" else message.senderDisplayName,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = UzzapOrange
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = formattedTime,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (message.isFromMe) {
+                Spacer(modifier = Modifier.width(4.dp))
+                when (message.status) {
+                    MessageDeliveryStatus.SENDING -> Text(
+                        "…",
                         fontSize = 10.sp,
-                        color = timestampColor
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.semantics { contentDescription = "Sending" }
                     )
-
-                    if (message.isFromMe) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        when (message.status) {
-                            MessageDeliveryStatus.SENDING -> {
-                                Text(
-                                    "…",
-                                    fontSize = 10.sp,
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f),
-                                    modifier = Modifier.semantics {
-                                        contentDescription = "Sending"
-                                    }
-                                )
-                            }
-                            MessageDeliveryStatus.SENT -> {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Sent",
-                                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f),
-                                    modifier = Modifier.size(12.dp)
-                                )
-                            }
-                            MessageDeliveryStatus.DELIVERED -> {
-                                Icon(
-                                    imageVector = Icons.Default.DoneAll,
-                                    contentDescription = "Delivered",
-                                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
-                                    modifier = Modifier.size(12.dp)
-                                )
-                            }
-                            MessageDeliveryStatus.READ -> {
-                                Icon(
-                                    imageVector = Icons.Default.DoneAll,
-                                    contentDescription = "Read",
-                                    tint = Color(0xFF69F0AE),
-                                    modifier = Modifier.size(12.dp)
-                                )
-                            }
-                            MessageDeliveryStatus.FAILED -> {
-                                Icon(
-                                    imageVector = Icons.Default.ErrorOutline,
-                                    contentDescription = "Failed to send",
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        }
-                    }
+                    MessageDeliveryStatus.SENT -> Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Sent",
+                        tint = UzzapOrange,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    MessageDeliveryStatus.DELIVERED -> Icon(
+                        imageVector = Icons.Default.DoneAll,
+                        contentDescription = "Delivered",
+                        tint = UzzapOrange,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    MessageDeliveryStatus.READ -> Icon(
+                        imageVector = Icons.Default.DoneAll,
+                        contentDescription = "Read",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    MessageDeliveryStatus.FAILED -> Icon(
+                        imageVector = Icons.Default.ErrorOutline,
+                        contentDescription = "Failed to send",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(14.dp)
+                    )
                 }
             }
         }
+
+        message.replyToBody?.let { quoted ->
+            Text(
+                text = "↪ $quoted",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                modifier = Modifier.padding(top = 3.dp, bottom = 2.dp)
+            )
+        }
+
+        ClassicEmoticonMessage(
+            message = message.body,
+            color = MaterialTheme.colorScheme.onSurface,
+            lineHeight = 24.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }

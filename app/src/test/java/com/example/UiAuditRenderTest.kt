@@ -40,6 +40,7 @@ import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.SplashScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.github.takahirom.roborazzi.captureRoboImage
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -84,7 +85,7 @@ private val auditContact = ContactEntity(
     statusMessage = "Online and ready to chat",
     category = ContactCategory.BUDDIES,
     avatarEmoji = "🌺",
-    avatarBgColor = 0xFFFF5722,
+    avatarBgColor = 0xFF31844D,
     isFavorite = true
 )
 
@@ -168,6 +169,29 @@ class UiAuditRenderTest {
 
     @Test
     @Config(qualifiers = "w320dp-h640dp-mdpi", sdk = [36])
+    fun darkModeToggleUpdatesTheAppThemeState() {
+        val isDarkMode = mutableStateOf(false)
+        composeTestRule.setContent {
+            MyApplicationTheme(darkTheme = isDarkMode.value) {
+                SettingsScreen(
+                    profile = auditProfile,
+                    isDarkMode = isDarkMode.value,
+                    onDarkModeChange = { isDarkMode.value = it }
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithTag("toggle_dark_mode")
+            .assertHasClickAction()
+            .performClick()
+
+        composeTestRule.runOnIdle {
+            assertTrue(isDarkMode.value)
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h640dp-mdpi", sdk = [36])
     fun compactChatKeepsPrimaryComposerActionUsable() {
         composeTestRule.setContent {
             MyApplicationTheme {
@@ -209,7 +233,7 @@ class UiAuditRenderTest {
         composeTestRule.setContent {
             MyApplicationTheme(darkTheme = darkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    AuditScreenContent(selectedScreen.value)
+                    AuditScreenContent(selectedScreen.value, isDarkMode = darkTheme)
                 }
             }
         }
@@ -225,7 +249,7 @@ class UiAuditRenderTest {
 }
 
 @Composable
-private fun AuditScreenContent(screen: AuditScreen) {
+private fun AuditScreenContent(screen: AuditScreen, isDarkMode: Boolean = false) {
     when (screen) {
         AuditScreen.SPLASH -> SplashScreen()
         AuditScreen.HEADER -> Column {
@@ -297,7 +321,10 @@ private fun AuditScreenContent(screen: AuditScreen) {
             totalRooms = 7,
             joinedRooms = listOf(auditRoom)
         )
-        AuditScreen.SETTINGS -> SettingsScreen(profile = auditProfile)
+        AuditScreen.SETTINGS -> SettingsScreen(
+            profile = auditProfile,
+            isDarkMode = isDarkMode
+        )
         AuditScreen.CHAT_DETAIL -> ChatDetailScreen(
             conversation = auditConversation,
             messages = listOf(
@@ -306,7 +333,7 @@ private fun AuditScreenContent(screen: AuditScreen) {
                     conversationId = auditConversation.id,
                     senderUsername = auditContact.username,
                     senderDisplayName = auditContact.displayName,
-                    body = "A long incoming message to verify wrapping, spacing, and bubble width on every device.",
+                    body = "A long incoming message to verify wrapping and spacing on every device.",
                     timestamp = 1_700_000_000_000,
                     status = MessageDeliveryStatus.READ,
                     isFromMe = false

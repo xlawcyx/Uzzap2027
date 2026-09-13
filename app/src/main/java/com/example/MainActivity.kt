@@ -2,6 +2,7 @@ package com.example
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -95,9 +96,18 @@ import kotlinx.coroutines.delay
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        val settings = getSharedPreferences(SETTINGS_PREFERENCES, MODE_PRIVATE)
+        val initialDarkMode = settings.getBoolean(DARK_MODE_PREFERENCE, false)
+        configureSystemBars(initialDarkMode)
+
         setContent {
-            MyApplicationTheme {
+            var isDarkMode by rememberSaveable { mutableStateOf(initialDarkMode) }
+
+            SideEffect {
+                configureSystemBars(isDarkMode)
+            }
+
+            MyApplicationTheme(darkTheme = isDarkMode) {
                 var showSplash by rememberSaveable { mutableStateOf(true) }
 
                 LaunchedEffect(Unit) {
@@ -114,15 +124,33 @@ class MainActivity : ComponentActivity() {
                     if (showSplash) {
                         SplashScreen()
                     } else {
-                        UzzapApp()
+                        UzzapApp(
+                            isDarkMode = isDarkMode,
+                            onDarkModeChange = { enabled ->
+                                isDarkMode = enabled
+                                settings.edit().putBoolean(DARK_MODE_PREFERENCE, enabled).apply()
+                            }
+                        )
                     }
                 }
             }
         }
     }
+
+    private fun configureSystemBars(darkMode: Boolean) {
+        val transparent = android.graphics.Color.TRANSPARENT
+        val style = if (darkMode) {
+            SystemBarStyle.dark(transparent)
+        } else {
+            SystemBarStyle.light(transparent, transparent)
+        }
+        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+    }
 }
 
 private const val SPLASH_DURATION_MILLIS = 1_200L
+private const val SETTINGS_PREFERENCES = "uzzap_appearance"
+private const val DARK_MODE_PREFERENCE = "dark_mode"
 
 private enum class AppScreen {
     TABS,
@@ -135,7 +163,9 @@ private const val CHROME_TRANSITION_MILLIS = 220
 
 @Composable
 fun UzzapApp(
-    viewModel: UzzapViewModel = viewModel()
+    viewModel: UzzapViewModel = viewModel(),
+    isDarkMode: Boolean = false,
+    onDarkModeChange: (Boolean) -> Unit = {}
 ) {
     val currentTab by viewModel.currentTab.collectAsStateWithLifecycle()
     val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
@@ -230,6 +260,7 @@ fun UzzapApp(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             AnimatedVisibility(
@@ -569,6 +600,8 @@ fun UzzapApp(
                                 SettingsScreen(
                                     profile = profile,
                                     firestoreSyncStatus = firestoreSyncStatus,
+                                    isDarkMode = isDarkMode,
+                                    onDarkModeChange = onDarkModeChange,
                                     onToggleVibration = { viewModel.updateVibrationSetting(it) },
                                     onClearChatCache = { viewModel.clearLocalChatCache() },
                                     onSyncNowClick = { viewModel.syncProfileWithCloud() },

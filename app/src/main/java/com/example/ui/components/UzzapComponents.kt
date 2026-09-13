@@ -76,7 +76,6 @@ import com.example.ui.theme.PresenceBusy
 import com.example.ui.theme.PresenceOffline
 import com.example.ui.theme.PresenceOnline
 import com.example.ui.theme.UzzapCyan
-import com.example.ui.theme.UzzapNavy
 import com.example.ui.theme.UzzapOrange
 import kotlin.math.roundToInt
 

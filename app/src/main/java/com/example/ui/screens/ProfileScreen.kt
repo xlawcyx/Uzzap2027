@@ -136,7 +136,7 @@ fun ProfileScreen(
                     Box(contentAlignment = Alignment.BottomEnd) {
                         UzzapAvatar(
                             emoji = profile?.avatarEmoji ?: "😎",
-                            bgColor = 0xFFFF5722,
+                            bgColor = 0xFF31844D,
                             presence = profile?.status ?: UserPresence.ONLINE,
                             size = 80
                         )
@@ -183,7 +183,7 @@ fun ProfileScreen(
                         Icon(
                             imageVector = Icons.Default.Verified,
                             contentDescription = "Verified UZZ-APP Account",
-                            tint = Color(0xFF10B981),
+                            tint = UzzapOrange,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -334,7 +334,7 @@ fun ProfileScreen(
                             text = "Broadcasts to Firebase",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF10B981)
+                            color = UzzapOrange
                         )
                     }
 
@@ -495,7 +495,7 @@ fun ProfileScreen(
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = UzzapCyan,
-                            contentColor = Color.White
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Icon(
@@ -543,7 +543,7 @@ fun ProfileScreen(
                             icon = Icons.Default.LocalFireDepartment,
                             title = "Firebase Synced",
                             subtitle = "Live Cloud",
-                            color = Color(0xFFEF4444),
+                            color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -558,7 +558,7 @@ fun ProfileScreen(
                             icon = Icons.Default.Phone,
                             title = "Mobile SIM",
                             subtitle = "Verified +63",
-                            color = Color(0xFF10B981),
+                            color = UzzapOrange,
                             modifier = Modifier.weight(1f)
                         )
                         BadgePill(

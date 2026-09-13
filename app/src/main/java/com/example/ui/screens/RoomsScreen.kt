@@ -548,7 +548,7 @@ fun RoomsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Group,
                                         contentDescription = null,
-                                        tint = Color(0xFF10B981),
+                                        tint = UzzapOrange,
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
@@ -556,19 +556,19 @@ fun RoomsScreen(
                                         text = "${provincesInRegion.sumOf { it.chatterCount }} chatters online",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF10B981)
+                                        color = UzzapOrange
                                     )
                                 }
 
                                 Surface(
-                                    color = if (provincesInRegion.any { it.isJoined }) Color(0xFF10B981).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                                    color = if (provincesInRegion.any { it.isJoined }) UzzapOrange.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
                                     shape = RoundedCornerShape(6.dp)
                                 ) {
                                     Text(
                                         text = "${provincesInRegion.count { it.isJoined }} Joined",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (provincesInRegion.any { it.isJoined }) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = if (provincesInRegion.any { it.isJoined }) UzzapOrange else MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                     )
                                 }
@@ -821,7 +821,7 @@ fun RegionRowCard(
                         text = "$totalChatters chatters",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF10B981)
+                        color = UzzapOrange
                     )
 
                     if (joinedCount > 0) {
@@ -831,14 +831,14 @@ fun RegionRowCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Surface(
-                            color = Color(0xFF10B981).copy(alpha = 0.15f),
+                            color = UzzapOrange.copy(alpha = 0.15f),
                             shape = RoundedCornerShape(4.dp)
                         ) {
                             Text(
                                 text = "✓ $joinedCount Joined",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF10B981),
+                                color = UzzapOrange,
                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                             )
                         }
@@ -915,7 +915,7 @@ fun ProvinceChatroomRow(
                         Spacer(modifier = Modifier.width(6.dp))
                         if (room.isJoined) {
                             Surface(
-                                color = Color(0xFF10B981).copy(alpha = 0.15f),
+                                color = UzzapOrange.copy(alpha = 0.15f),
                                 shape = RoundedCornerShape(4.dp)
                             ) {
                                 Row(
@@ -925,7 +925,7 @@ fun ProvinceChatroomRow(
                                     Icon(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = null,
-                                        tint = Color(0xFF10B981),
+                                        tint = UzzapOrange,
                                         modifier = Modifier.size(10.dp)
                                     )
                                     Spacer(modifier = Modifier.width(2.dp))
@@ -933,7 +933,7 @@ fun ProvinceChatroomRow(
                                         text = "Joined",
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF10B981)
+                                        color = UzzapOrange
                                     )
                                 }
                             }
@@ -955,14 +955,14 @@ fun ProvinceChatroomRow(
                             modifier = Modifier
                                 .size(6.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF10B981))
+                                .background(UzzapOrange)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "${room.chatterCount} chatters online",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF10B981)
+                            color = UzzapOrange
                         )
                     }
                 }
@@ -982,13 +982,13 @@ fun ProvinceChatroomRow(
                         onClick = onToggleJoin,
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                        border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.6f)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.6f)),
                         modifier = Modifier.testTag("leave_room_${room.id}")
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Logout,
                             contentDescription = "Leave",
-                            tint = Color(0xFFEF4444),
+                            tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -996,7 +996,7 @@ fun ProvinceChatroomRow(
                             text = "Leave",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFFEF4444)
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
 
