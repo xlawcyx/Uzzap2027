@@ -504,27 +504,6 @@ fun LoginScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        OutlinedButton(
-                            onClick = {
-                                signInUsername = "juandelacruz"
-                                signInPassword = "password"
-                                onSignIn("juandelacruz", "password")
-                            },
-                            enabled = !isLoading,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(42.dp)
-                                .testTag("demo_login_button")
-                        ) {
-                            Text(
-                                text = "Quick Sign In as juandelacruz",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
                         Spacer(modifier = Modifier.height(14.dp))
 
                         // Switch to Sign Up helper
