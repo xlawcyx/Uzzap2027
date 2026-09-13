@@ -117,7 +117,6 @@ fun ChatDetailScreen(
     var showBlockDialog by remember { mutableStateOf(false) }
     var reportReason by remember { mutableStateOf("Harassment / Bullying") }
     var reportDetails by remember { mutableStateOf("") }
-    var reportSubmitted by remember { mutableStateOf(false) }
     var hasPositionedInitialMessages by remember { mutableStateOf(false) }
     var previousMessageCount by remember { mutableStateOf(0) }
 
@@ -545,7 +544,6 @@ fun ChatDetailScreen(
                         onClick = {
                             onReportUser?.invoke(conversation.recipientUsername, reportReason, reportDetails)
                             showReportDialog = false
-                            reportSubmitted = true
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                         modifier = Modifier.testTag("submit_report_button")
@@ -608,34 +606,6 @@ fun ChatDetailScreen(
             )
         }
 
-        // Report Submitted Confirmation Dialog
-        if (reportSubmitted) {
-            AlertDialog(
-                onDismissRequest = { reportSubmitted = false },
-                title = {
-                    Text(
-                        text = "Report Submitted",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                },
-                text = {
-                    Text(
-                        text = "Thank you for reporting this incident. Our safety team reviews reported accounts and messages according to Google Play & App Store policies. You can also block this user to prevent future messages.",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = { reportSubmitted = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = UzzapOrange)
-                    ) {
-                        Text("OK")
-                    }
-                }
-            )
-        }
     }
 }
 

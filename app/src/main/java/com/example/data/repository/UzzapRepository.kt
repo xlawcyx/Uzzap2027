@@ -24,8 +24,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
@@ -53,6 +54,7 @@ class UzzapRepository(
 
     val firestoreService = UzzapFirestoreService(scope)
     val firestoreSyncStatus: StateFlow<FirestoreSyncStatus> = firestoreService.syncStatus
+    private val cloudSyncMutex = Mutex()
 
     // Event bus for buzzer effect
     private val _buzzEvents = MutableSharedFlow<String>(extraBufferCapacity = 10)
@@ -66,26 +68,23 @@ class UzzapRepository(
 
     fun initCloudSync() {
         scope.launch(Dispatchers.IO) {
-            configureCloudSync()
+            runCatching { configureCloudSync() }
+                .onFailure { android.util.Log.w("UzzapRepository", "Cloud sync unavailable", it) }
         }
     }
 
-    private suspend fun configureCloudSync() {
-        try {
+    private suspend fun configureCloudSync() = cloudSyncMutex.withLock {
                 // Wait for user profile
                 val profile = userDao.getProfile()
                 val myUsername = profile?.username ?: return
 
                 // 1. Sync current user presence/profile to Firestore
-                profile.let { firestoreService.syncUserProfile(it) }
+                firestoreService.syncUserProfile(profile).getOrThrow()
 
-                // 2. Seed initial chatrooms if needed & listen to cloud chatrooms
-                val localRooms = chatroomDao.getAllChatroomsFlow().firstOrNull() ?: emptyList()
-                if (localRooms.isNotEmpty()) {
-                    firestoreService.seedInitialRoomsIfEmpty(localRooms)
-                }
+                // Official rooms are provisioned locally or by a trusted backend. A client
+                // must never claim ownership of the shared catalog merely by signing in first.
                 firestoreService.listenToChatrooms { remoteRooms ->
-                    scope.launch(Dispatchers.IO) {
+                    launchCloudCallback("chatroom snapshot") {
                         val mergedRooms = remoteRooms.map { remoteRoom ->
                             val localRoom = chatroomDao.getChatroomById(remoteRoom.id)
                             mergeRemoteChatroom(remoteRoom, localRoom)
@@ -96,7 +95,12 @@ class UzzapRepository(
 
                 // 3. Listen to incoming 1-on-1 messages & BUZZes directed to this user
                 firestoreService.listenToUserInbox(myUsername) { incoming ->
-                    scope.launch(Dispatchers.IO) {
+                    launchCloudCallback("inbox message") {
+                        val senderContact = contactDao.getContactByUsername(incoming.senderUsername)
+                        if (senderContact?.friendshipState == FriendshipState.BLOCKED) {
+                            firestoreService.acknowledgeInboxMessage(myUsername, incoming.id)
+                            return@launchCloudCallback
+                        }
                         val existing = messageDao.getMessageById(incoming.id)
                         if (existing == null) {
                             messageDao.insertMessage(incoming)
@@ -136,19 +140,22 @@ class UzzapRepository(
                                 _buzzEvents.emit("⚡ BUZZ from ${incoming.senderDisplayName}!")
                             }
                         }
+                        // Acknowledge only after the message is safely persisted (or known to be
+                        // a duplicate), otherwise a process death could lose the sole inbox copy.
+                        firestoreService.acknowledgeInboxMessage(myUsername, incoming.id)
                     }
                 }
 
                 // 4. Listen to buddy presence updates from Firestore
                 firestoreService.listenToUsersPresence { username, presence, statusMessage ->
-                    scope.launch(Dispatchers.IO) {
+                    launchCloudCallback("presence snapshot") {
                         contactDao.updatePresenceByUsername(username, presence, statusMessage)
                     }
                 }
 
                 // 5. Listen to incoming friend requests from Firestore
                 firestoreService.listenToFriendRequests { newContact ->
-                    scope.launch(Dispatchers.IO) {
+                    launchCloudCallback("incoming friend request") {
                         val existing = contactDao.getContactByUsername(newContact.username)
                         if (existing == null) {
                             contactDao.insertContact(newContact)
@@ -158,20 +165,24 @@ class UzzapRepository(
 
                 // 6. Reflect the recipient's response in the sender's local buddy list.
                 firestoreService.listenToOutgoingFriendRequests { username, status ->
-                    scope.launch(Dispatchers.IO) {
+                    launchCloudCallback("outgoing friend request") {
                         when (status) {
                             FriendRequestStatus.PENDING -> Unit
-                            FriendRequestStatus.ACCEPTED -> contactDao.updateFriendshipStateByUsername(
-                                username,
-                                FriendshipState.ACCEPTED
+                            FriendRequestStatus.ACCEPTED -> contactDao.updateFriendshipStateIf(
+                                username = username,
+                                expectedState = FriendshipState.PENDING_OUTGOING,
+                                newState = FriendshipState.ACCEPTED
                             )
-                            FriendRequestStatus.DECLINED -> contactDao.deleteContactByUsername(username)
+                            FriendRequestStatus.DECLINED -> contactDao.deleteContactIfState(
+                                username,
+                                FriendshipState.PENDING_OUTGOING
+                            )
+                        }
+                        if (status != FriendRequestStatus.PENDING) {
+                            firestoreService.acknowledgeOutgoingFriendRequest(myUsername, username)
                         }
                     }
                 }
-        } catch (e: Exception) {
-            // Graceful fallback to local Room
-        }
     }
 
     /** Re-establishes cloud listeners while Room remains the immediate source of truth. */
@@ -192,7 +203,7 @@ class UzzapRepository(
             val profile = userDao.getProfile()
             val myUsername = profile?.username ?: return@launch
             firestoreService.listenToRoomMessages(roomId, myUsername) { incomingRoomMsg ->
-                scope.launch(Dispatchers.IO) {
+                launchCloudCallback("room message") {
                     val existing = chatroomDao.getRoomMessageById(incomingRoomMsg.id)
                     if (existing == null) {
                         chatroomDao.insertRoomMessage(incomingRoomMsg)
@@ -209,8 +220,8 @@ class UzzapRepository(
     suspend fun updatePresence(status: UserPresence, statusMessage: String) {
         userDao.updatePresence(status, statusMessage)
         val profile = userDao.getProfile()
-        if (profile != null) {
-            firestoreService.syncUserProfile(profile)
+        if (profile != null && com.example.UzzapApplication.isRealFirebaseConfigured) {
+            firestoreService.syncUserProfile(profile).getOrThrow()
         }
     }
 
@@ -219,8 +230,10 @@ class UzzapRepository(
     }
 
     suspend fun updateProfile(profile: UserProfileEntity) {
+        if (com.example.UzzapApplication.isRealFirebaseConfigured) {
+            firestoreService.syncUserProfile(profile).getOrThrow()
+        }
         userDao.insertProfile(profile)
-        firestoreService.syncUserProfile(profile)
     }
 
     suspend fun toggleFavoriteContact(contactId: String) {
@@ -252,6 +265,9 @@ class UzzapRepository(
         category: ContactCategory
     ) {
         val cleanUsername = normalizeUsername(username)
+        val myProfile = userDao.getProfile()
+        check(cleanUsername.isNotBlank()) { "Enter a valid username." }
+        check(myProfile?.username != cleanUsername) { "You cannot send a friend request to yourself." }
         val cloudEnabled = com.example.UzzapApplication.isRealFirebaseConfigured
         val newContact = ContactEntity(
             id = "contact_$cleanUsername",
@@ -270,7 +286,6 @@ class UzzapRepository(
             avatarEmoji = listOf("\uD83D\uDE0A", "\uD83E\uDD17", "\uD83D\uDC36", "\uD83C\uDF89", "\u2B50", "\uD83D\uDCBB").random(),
             avatarBgColor = listOf(0xFFE91E63, 0xFF3F51B5, 0xFF009688, 0xFFFF9800, 0xFF673AB7).random()
         )
-        val myProfile = userDao.getProfile()
         if (cloudEnabled) {
             checkNotNull(myProfile) { "Complete your profile before adding a buddy." }
             firestoreService.sendFriendRequest(myProfile, cleanUsername).getOrThrow()
@@ -306,9 +321,12 @@ class UzzapRepository(
     }
 
     suspend fun sendMessage(conversationId: String, text: String, replyToBody: String? = null) {
-        val profile = userDao.getProfile()
-        val myName = profile?.displayName ?: "Juan Dela Cruz"
-        val myUsername = profile?.username ?: "juandelacruz"
+        val profile = checkNotNull(userDao.getProfile()) { "Sign in before sending a message." }
+        val conversation = checkNotNull(conversationDao.getConversationById(conversationId)) {
+            "This conversation is no longer available."
+        }
+        val myName = profile.displayName
+        val myUsername = profile.username
 
         val msgId = "msg_${UUID.randomUUID().toString().take(8)}"
         val now = System.currentTimeMillis()
@@ -329,9 +347,7 @@ class UzzapRepository(
         conversationDao.updateLastMessage(conversationId, text, now, 0)
 
         // Sync to Firestore & deliver to recipient
-        val convo = conversationDao.getConversationById(conversationId)
-        val recipient = convo?.recipientUsername ?: "uzzap_buddy"
-        val result = firestoreService.sendDirectMessage(conversationId, recipient, msg)
+        val result = firestoreService.sendDirectMessage(conversationId, conversation.recipientUsername, msg)
         messageDao.updateStatus(
             msgId,
             if (result.isSuccess) MessageDeliveryStatus.SENT else MessageDeliveryStatus.FAILED
@@ -340,9 +356,12 @@ class UzzapRepository(
     }
 
     suspend fun sendBuzz(conversationId: String) {
-        val profile = userDao.getProfile()
-        val myName = profile?.displayName ?: "Juan Dela Cruz"
-        val myUsername = profile?.username ?: "juandelacruz"
+        val profile = checkNotNull(userDao.getProfile()) { "Sign in before sending a BUZZ." }
+        val conversation = checkNotNull(conversationDao.getConversationById(conversationId)) {
+            "This conversation is no longer available."
+        }
+        val myName = profile.displayName
+        val myUsername = profile.username
 
         val msgId = "msg_${UUID.randomUUID().toString().take(8)}"
         val now = System.currentTimeMillis()
@@ -362,9 +381,7 @@ class UzzapRepository(
         conversationDao.updateLastMessage(conversationId, "\u26A1 BUZZED YOU!", now, 0)
         _buzzEvents.emit("Outgoing BUZZ sent!")
 
-        val convo = conversationDao.getConversationById(conversationId)
-        val recipient = convo?.recipientUsername ?: "uzzap_buddy"
-        val result = firestoreService.sendDirectMessage(conversationId, recipient, msg)
+        val result = firestoreService.sendDirectMessage(conversationId, conversation.recipientUsername, msg)
         messageDao.updateStatus(
             msgId,
             if (result.isSuccess) MessageDeliveryStatus.SENT else MessageDeliveryStatus.FAILED
@@ -382,14 +399,20 @@ class UzzapRepository(
     }
 
     suspend fun joinOrLeaveRoom(roomId: String, join: Boolean) {
-        val room = chatroomDao.getChatroomById(roomId) ?: return
-        chatroomDao.updateJoinState(roomId, join, if (join) 1 else -1)
+        val room = checkNotNull(chatroomDao.getChatroomById(roomId)) { "This room no longer exists." }
+        if (room.isJoined == join) return
+        val profile = checkNotNull(userDao.getProfile()) { "Sign in before changing room membership." }
+        val delta = if (join) 1 else -1
+        var localDelta = delta
+        if (com.example.UzzapApplication.isRealFirebaseConfigured) {
+            val cloudCountChanged = firestoreService.updateRoomMembership(roomId, join).getOrThrow()
+            if (!cloudCountChanged) localDelta = 0
+        }
+        chatroomDao.updateJoinState(roomId, join, localDelta)
 
-        val profile = userDao.getProfile()
-        val nickname = profile?.displayName?.split(" ")?.firstOrNull()?.ifBlank { null }
-            ?: profile?.displayName?.ifBlank { null }
-            ?: profile?.username
-            ?: "Juan"
+        val nickname = profile.displayName.split(" ").firstOrNull()?.ifBlank { null }
+            ?: profile.displayName.ifBlank { null }
+            ?: profile.username
 
         val now = System.currentTimeMillis()
         val noticeText = if (join) "$nickname joins the chat" else "$nickname left the chat"
@@ -404,29 +427,27 @@ class UzzapRepository(
             isSystem = true
         )
         chatroomDao.insertRoomMessage(systemNotice)
-        firestoreService.sendRoomMembershipChange(
-            roomId,
-            systemNotice,
-            if (join) 1 else -1
-        ).getOrThrow()
     }
 
     suspend fun sendRoomMessage(roomId: String, text: String) {
-        val profile = userDao.getProfile()
-        val username = profile?.username ?: "juandelacruz"
+        val room = checkNotNull(chatroomDao.getChatroomById(roomId)) { "This room no longer exists." }
+        check(room.isJoined) { "Join the room before sending a message." }
+        val profile = checkNotNull(userDao.getProfile()) { "Sign in before sending a room message." }
 
         val msg = RoomMessageEntity(
             id = "rm_${UUID.randomUUID().toString().take(8)}",
             roomId = roomId,
-            senderUsername = username,
+            senderUsername = profile.username,
             senderRole = RoomRole.MEMBER,
             message = text,
             timestamp = System.currentTimeMillis(),
             isFromMe = true,
             isSystem = false
         )
+        if (com.example.UzzapApplication.isRealFirebaseConfigured) {
+            firestoreService.sendRoomMessage(roomId, msg).getOrThrow()
+        }
         chatroomDao.insertRoomMessage(msg)
-        firestoreService.sendRoomMessage(roomId, msg).getOrThrow()
     }
 
     suspend fun createChatroom(name: String, topic: String, category: String) {
@@ -440,6 +461,11 @@ class UzzapRepository(
             isJoined = true,
             userRole = RoomRole.OWNER
         )
+        if (com.example.UzzapApplication.isRealFirebaseConfigured) {
+            firestoreService.createChatroom(newRoom).getOrThrow()
+        } else {
+            check(com.example.BuildConfig.ALLOW_DEMO_AUTH) { "Cloud connection is required to create a room." }
+        }
         chatroomDao.insertChatroom(newRoom)
 
         val welcomeMsg = RoomMessageEntity(
@@ -453,7 +479,6 @@ class UzzapRepository(
         )
         chatroomDao.insertRoomMessage(welcomeMsg)
 
-        firestoreService.createChatroom(newRoom).getOrThrow()
     }
 
     suspend fun signIn(usernameOrPhone: String, pin: String): Result<UserProfileEntity> {
@@ -567,18 +592,57 @@ class UzzapRepository(
     }
 
     suspend fun submitReport(target: String, reason: String, details: String) {
-        val myProfile = userDao.getProfile()
-        val myUsername = myProfile?.username ?: "anonymous"
+        val myProfile = checkNotNull(userDao.getProfile()) { "Sign in before submitting a report." }
+        val myUsername = myProfile.username
         firestoreService.submitReport(myUsername, target, reason, details).getOrThrow()
+    }
+
+    suspend fun blockUser(username: String) {
+        val normalized = normalizeUsername(username)
+        val existing = contactDao.getContactByUsername(normalized)
+        val blocked = existing?.copy(friendshipState = FriendshipState.BLOCKED)
+            ?: ContactEntity(
+                id = "contact_$normalized",
+                username = normalized,
+                displayName = normalized,
+                nickname = normalized,
+                phoneNumber = "",
+                presence = UserPresence.OFFLINE,
+                statusMessage = "Blocked",
+                category = ContactCategory.OTHER,
+                friendshipState = FriendshipState.BLOCKED,
+                avatarEmoji = "\uD83D\uDEAB",
+                avatarBgColor = 0xFF616161
+            )
+        contactDao.insertContact(blocked)
+    }
+
+    suspend fun clearLocalChatCache() {
+        messageDao.deleteAll()
+        chatroomDao.deleteAllRoomMessages()
     }
 
     suspend fun deleteAccountData(password: String) {
         val myProfile = userDao.getProfile()
         val myUsername = myProfile?.username
-        if (myUsername != null) {
+        if (myUsername != null && com.example.UzzapApplication.isRealFirebaseConfigured) {
             firestoreService.deleteUserCloudData(myUsername, password).getOrThrow()
+        } else if (!com.example.BuildConfig.ALLOW_DEMO_AUTH) {
+            throw IllegalStateException("No account is signed in.")
         }
         database.clearAllTables()
+    }
+
+    private fun launchCloudCallback(label: String, block: suspend () -> Unit) {
+        scope.launch(Dispatchers.IO) {
+            try {
+                block()
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                android.util.Log.e("UzzapRepository", "Failed processing $label", error)
+            }
+        }
     }
 
     fun close() {

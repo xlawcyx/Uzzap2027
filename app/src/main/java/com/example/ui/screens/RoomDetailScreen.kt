@@ -100,7 +100,6 @@ fun RoomDetailScreen(
     var showReportRoomDialog by remember { mutableStateOf(false) }
     var reportRoomReason by remember { mutableStateOf("Inappropriate Content") }
     var reportRoomDetails by remember { mutableStateOf("") }
-    var reportRoomSubmitted by remember { mutableStateOf(false) }
     var hasPositionedInitialMessages by remember { mutableStateOf(false) }
     var previousMessageCount by remember { mutableStateOf(0) }
     val listState = rememberLazyListState()
@@ -469,6 +468,7 @@ fun RoomDetailScreen(
                         if (inputText.isNotBlank()) {
                             if (room?.isJoined == false && onToggleJoin != null) {
                                 onToggleJoin(true)
+                                return@IconButton
                             }
                             onSendMessage(inputText.trim())
                             inputText = ""
@@ -559,7 +559,6 @@ fun RoomDetailScreen(
                         onClick = {
                             onReportRoom?.invoke(room.id, reportRoomReason, reportRoomDetails)
                             showReportRoomDialog = false
-                            reportRoomSubmitted = true
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                         modifier = Modifier.testTag("submit_room_report_button")
@@ -575,34 +574,6 @@ fun RoomDetailScreen(
             )
         }
 
-        // Report Room Submitted Dialog
-        if (reportRoomSubmitted) {
-            AlertDialog(
-                onDismissRequest = { reportRoomSubmitted = false },
-                title = {
-                    Text(
-                        text = "Report Received",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                },
-                text = {
-                    Text(
-                        text = "Thank you. Our moderation team reviews reported chatrooms within 24 hours to enforce our Community Guidelines.",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = { reportRoomSubmitted = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = UzzapOrange)
-                    ) {
-                        Text("OK")
-                    }
-                }
-            )
-        }
     }
 }
 

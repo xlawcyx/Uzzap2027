@@ -164,12 +164,6 @@ fun UzzapApp(
     val firestoreSyncStatus by viewModel.firestoreSyncStatus.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
-    val notificationsEnabled by viewModel.notificationsEnabled.collectAsStateWithLifecycle()
-    val soundEffectsEnabled by viewModel.soundEffectsEnabled.collectAsStateWithLifecycle()
-    val enterKeySends by viewModel.enterKeySends.collectAsStateWithLifecycle()
-    val cloudPresenceSync by viewModel.cloudPresenceSync.collectAsStateWithLifecycle()
-    val autoSaveHistory by viewModel.autoSaveHistory.collectAsStateWithLifecycle()
-
     val activeConvo = conversations.firstOrNull { it.id == activeConversationId }
     val activeRoom = chatrooms.firstOrNull { it.id == activeRoomId }
     var retainedConversation by remember { mutableStateOf(activeConvo) }
@@ -575,20 +569,11 @@ fun UzzapApp(
                                 SettingsScreen(
                                     profile = profile,
                                     firestoreSyncStatus = firestoreSyncStatus,
-                                    notificationsEnabled = notificationsEnabled,
-                                    soundEffectsEnabled = soundEffectsEnabled,
-                                    enterKeySends = enterKeySends,
-                                    cloudPresenceSync = cloudPresenceSync,
-                                    autoSaveHistory = autoSaveHistory,
                                     onToggleVibration = { viewModel.updateVibrationSetting(it) },
-                                    onToggleNotifications = { viewModel.updateNotificationSetting(it) },
-                                    onToggleSoundEffects = { viewModel.updateSoundSetting(it) },
-                                    onToggleEnterKeySends = { viewModel.updateEnterKeySends(it) },
-                                    onToggleCloudPresenceSync = { viewModel.updateCloudPresenceSync(it) },
-                                    onToggleAutoSaveHistory = { viewModel.updateAutoSaveHistory(it) },
+                                    onClearChatCache = { viewModel.clearLocalChatCache() },
                                     onSyncNowClick = { viewModel.syncProfileWithCloud() },
                                     onNavigateToProfile = { viewModel.setTab(MainTab.PROFILE) },
-                                    onLogoutClick = { viewModel.logout(context) },
+                                    onLogoutClick = { viewModel.logout() },
                                     onDeleteAccount = { password -> viewModel.deleteAccount(password) }
                                 )
                             }

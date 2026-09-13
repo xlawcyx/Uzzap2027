@@ -2,10 +2,16 @@ package com.example.ui.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.auth.AuthenticationManager
+import com.example.BuildConfig
+import com.example.UzzapApplication
 import com.example.data.local.UzzapDatabase
 import com.example.data.model.ChatroomEntity
 import com.example.data.model.ContactCategory
@@ -45,7 +51,10 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
     // Session / Auth state
     private val prefs = application.getSharedPreferences("uzzap_session", Context.MODE_PRIVATE)
     private val _isLoggedIn = MutableStateFlow(
-        prefs.getBoolean("is_logged_in", false) && AuthenticationManager.getInstance().isUserSignedIn()
+        prefs.getBoolean("is_logged_in", false) && (
+            AuthenticationManager.getInstance().isUserSignedIn() ||
+                (BuildConfig.ALLOW_DEMO_AUTH && !UzzapApplication.isRealFirebaseConfigured)
+            )
     )
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
@@ -96,21 +105,6 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
 
     // Settings State
     private val settingsPrefs = application.getSharedPreferences("uzzap_settings", Context.MODE_PRIVATE)
-    private val _notificationsEnabled = MutableStateFlow(settingsPrefs.getBoolean("notifications_enabled", true))
-    val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
-
-    private val _soundEffectsEnabled = MutableStateFlow(settingsPrefs.getBoolean("sound_effects_enabled", true))
-    val soundEffectsEnabled: StateFlow<Boolean> = _soundEffectsEnabled.asStateFlow()
-
-    private val _enterKeySends = MutableStateFlow(settingsPrefs.getBoolean("enter_key_sends", true))
-    val enterKeySends: StateFlow<Boolean> = _enterKeySends.asStateFlow()
-
-    private val _cloudPresenceSync = MutableStateFlow(settingsPrefs.getBoolean("cloud_presence_sync", true))
-    val cloudPresenceSync: StateFlow<Boolean> = _cloudPresenceSync.asStateFlow()
-
-    private val _autoSaveHistory = MutableStateFlow(settingsPrefs.getBoolean("auto_save_history", true))
-    val autoSaveHistory: StateFlow<Boolean> = _autoSaveHistory.asStateFlow()
-
     private val _buzzShakeTrigger = MutableStateFlow(0)
     val buzzShakeTrigger: StateFlow<Int> = _buzzShakeTrigger.asStateFlow()
 
@@ -153,7 +147,10 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
         // Collect buzz events to trigger vibration/screen shake
         viewModelScope.launch {
             repository.buzzEvents.collect {
-                _buzzShakeTrigger.value += 1
+                if (profile.value?.vibrationEnabled != false) {
+                    _buzzShakeTrigger.value += 1
+                    vibrateForBuzz()
+                }
             }
         }
     }
@@ -171,6 +168,11 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
                 repository.refreshCloudData()
                 // Keep the Material indicator readable while listeners reconnect.
                 delay(400)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                android.util.Log.e("UzzapViewModel", "Cloud refresh failed", error)
+                _operationMessage.value = "Cloud refresh failed: ${error.localizedMessage ?: "please try again."}"
             } finally {
                 _isRefreshing.value = false
             }
@@ -185,7 +187,7 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startConversationWithContact(contact: ContactEntity) {
-        viewModelScope.launch {
+        launchOperation("Conversation could not be opened") {
             val convoId = repository.startOrGetConversation(contact)
             _activeConversationId.value = convoId
         }
@@ -240,41 +242,16 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
 
     // Operational Actions
     fun updatePresence(status: UserPresence, message: String) {
-        viewModelScope.launch {
+        launchOperation("Presence could not be updated") {
             repository.updatePresence(status, message)
             _isPresenceMenuOpen.value = false
         }
     }
 
     fun updateVibrationSetting(enabled: Boolean) {
-        viewModelScope.launch {
+        launchOperation("Vibration setting could not be updated") {
             repository.updateVibration(enabled)
         }
-    }
-
-    fun updateNotificationSetting(enabled: Boolean) {
-        _notificationsEnabled.value = enabled
-        settingsPrefs.edit { putBoolean("notifications_enabled", enabled) }
-    }
-
-    fun updateSoundSetting(enabled: Boolean) {
-        _soundEffectsEnabled.value = enabled
-        settingsPrefs.edit { putBoolean("sound_effects_enabled", enabled) }
-    }
-
-    fun updateEnterKeySends(enabled: Boolean) {
-        _enterKeySends.value = enabled
-        settingsPrefs.edit { putBoolean("enter_key_sends", enabled) }
-    }
-
-    fun updateCloudPresenceSync(enabled: Boolean) {
-        _cloudPresenceSync.value = enabled
-        settingsPrefs.edit { putBoolean("cloud_presence_sync", enabled) }
-    }
-
-    fun updateAutoSaveHistory(enabled: Boolean) {
-        _autoSaveHistory.value = enabled
-        settingsPrefs.edit { putBoolean("auto_save_history", enabled) }
     }
 
     fun updateFullProfile(
@@ -283,8 +260,8 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
         avatarEmoji: String,
         phoneNumber: String = ""
     ) {
-        viewModelScope.launch {
-            val current = profile.value ?: return@launch
+        launchOperation("Profile could not be updated") {
+            val current = profile.value ?: return@launchOperation
             val updated = current.copy(
                 displayName = displayName.trim().ifBlank { current.displayName },
                 statusMessage = statusMessage.trim().ifBlank { current.statusMessage },
@@ -296,7 +273,7 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggleFavorite(contactId: String) {
-        viewModelScope.launch {
+        launchOperation("Favorite could not be updated") {
             repository.toggleFavoriteContact(contactId)
         }
     }
@@ -360,12 +337,12 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
      * Signs out the user, updates their presence to OFFLINE, clears active chats/rooms,
      * and triggers the sign-in screen.
      */
-    fun logout(context: Context? = null) {
+    fun logout() {
         viewModelScope.launch {
             prefs.edit { putBoolean("is_logged_in", false) }
-            repository.updatePresence(UserPresence.OFFLINE, "Offline - Logged out")
+            runCatching { repository.updatePresence(UserPresence.OFFLINE, "Offline - Logged out") }
             try {
-                AuthenticationManager.getInstance().signOut(context ?: getApplication())
+                AuthenticationManager.getInstance().signOut().getOrThrow()
             } catch (e: Exception) {
                 // Graceful fallback if no active Firebase session
             }
@@ -377,10 +354,11 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun syncProfileWithCloud() {
-        viewModelScope.launch {
+        launchOperation("Profile could not be synced") {
             val p = profile.value
             if (p != null) {
                 repository.updateProfile(p)
+                _operationMessage.value = "Profile synced successfully."
             }
         }
     }
@@ -444,21 +422,26 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
     fun submitReport(target: String, reason: String, details: String) {
         launchOperation("Report could not be submitted") {
             repository.submitReport(target, reason, details)
+            _operationMessage.value = "Report submitted successfully."
         }
     }
 
     fun blockUser(username: String) {
-        viewModelScope.launch {
-            val contact = repository.getContactByUsername(username)
-            if (contact != null) {
-                repository.deleteContact(contact.id)
-            }
+        launchOperation("User could not be blocked") {
+            repository.blockUser(username)
             val blockedConversationId = conversations.value
                 .firstOrNull { it.recipientUsername == username }
                 ?.id
             if (_activeConversationId.value == blockedConversationId) {
                 _activeConversationId.value = null
             }
+        }
+    }
+
+    fun clearLocalChatCache() {
+        launchOperation("Chat cache could not be cleared") {
+            repository.clearLocalChatCache()
+            _operationMessage.value = "Local chat cache cleared."
         }
     }
 
@@ -492,6 +475,21 @@ class UzzapViewModel(application: Application) : AndroidViewModel(application) {
                 android.util.Log.e("UzzapViewModel", failureMessage, error)
                 _operationMessage.value = "$failureMessage: ${error.localizedMessage ?: "please try again."}"
             }
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun vibrateForBuzz() {
+        val application = getApplication<Application>()
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            application.getSystemService(VibratorManager::class.java)?.defaultVibrator
+        } else {
+            application.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        } ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            vibrator.vibrate(250)
         }
     }
 

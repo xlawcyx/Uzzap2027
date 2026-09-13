@@ -70,14 +70,21 @@ interface ContactDao {
     @Query("UPDATE contacts SET friendshipState = :state WHERE username = :username")
     suspend fun updateFriendshipStateByUsername(username: String, state: FriendshipState)
 
+    @Query("UPDATE contacts SET friendshipState = :newState WHERE username = :username AND friendshipState = :expectedState")
+    suspend fun updateFriendshipStateIf(
+        username: String,
+        expectedState: FriendshipState,
+        newState: FriendshipState
+    )
+
     @Query("UPDATE contacts SET isFavorite = NOT isFavorite WHERE id = :id")
     suspend fun toggleFavorite(id: String)
 
     @Query("DELETE FROM contacts WHERE id = :id")
     suspend fun deleteContact(id: String)
 
-    @Query("DELETE FROM contacts WHERE username = :username")
-    suspend fun deleteContactByUsername(username: String)
+    @Query("DELETE FROM contacts WHERE username = :username AND friendshipState = :expectedState")
+    suspend fun deleteContactIfState(username: String, expectedState: FriendshipState)
 }
 
 @Dao
@@ -126,6 +133,9 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE conversationId = :conversationId")
     suspend fun clearHistory(conversationId: String)
+
+    @Query("DELETE FROM messages")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -145,9 +155,6 @@ interface ChatroomDao {
     @Query("UPDATE chatrooms SET isJoined = :isJoined, chatterCount = chatterCount + :chatterDelta WHERE id = :id")
     suspend fun updateJoinState(id: String, isJoined: Boolean, chatterDelta: Int)
 
-    @Query("SELECT COUNT(*) FROM chatrooms")
-    suspend fun getChatroomCount(): Int
-
     @Query("DELETE FROM chatrooms")
     suspend fun deleteAllChatrooms()
 
@@ -162,4 +169,7 @@ interface ChatroomDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllRoomMessages(messages: List<RoomMessageEntity>)
+
+    @Query("DELETE FROM room_messages")
+    suspend fun deleteAllRoomMessages()
 }

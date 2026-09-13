@@ -329,12 +329,14 @@ class UzzapFirestoreService(
         }
     }
 
-    fun syncUserProfile(profile: UserProfileEntity) {
-        scope.launch(Dispatchers.IO) {
-            try {
+    suspend fun syncUserProfile(profile: UserProfileEntity): Result<Unit> = cloudWrite(
+        failureMessage = "Failed syncing user profile"
+    ) {
                 _syncStatus.value = FirestoreSyncStatus.SYNCING
+                val authUid = auth.currentUser?.uid
+                    ?: throw IllegalStateException("Sign in before syncing your profile.")
                 val userData = hashMapOf<String, Any>(
-                    "authUid" to (auth.currentUser?.uid ?: return@launch),
+                    "authUid" to authUid,
                     "username" to profile.username,
                     "displayName" to profile.displayName,
                     "phoneNumber" to profile.phoneNumber,
@@ -346,7 +348,7 @@ class UzzapFirestoreService(
                     "vibrationEnabled" to profile.vibrationEnabled
                 )
                 val publicProfileData = hashMapOf<String, Any>(
-                    "authUid" to (auth.currentUser?.uid ?: return@launch),
+                    "authUid" to authUid,
                     "username" to profile.username,
                     "displayName" to profile.displayName,
                     "status" to profile.status.name,
@@ -367,18 +369,9 @@ class UzzapFirestoreService(
                         SetOptions.merge()
                     )
                     .commit()
-                    .addOnSuccessListener {
-                        _syncStatus.value = FirestoreSyncStatus.CONNECTED
-                        Log.d(TAG, "User profile synced to Firestore: ${profile.username}")
-                    }
-                    .addOnFailureListener { e ->
-                        Log.w(TAG, "Failed syncing user profile: ${e.message}")
-                        _syncStatus.value = FirestoreSyncStatus.OFFLINE_CACHE
-                    }
-            } catch (e: Exception) {
-                Log.w(TAG, "Error in syncUserProfile: ${e.message}")
-            }
-        }
+                    .await()
+                _syncStatus.value = FirestoreSyncStatus.CONNECTED
+                Log.d(TAG, "User profile synced to Firestore: ${profile.username}")
     }
 
     fun listenToUsersPresence(
@@ -395,12 +388,12 @@ class UzzapFirestoreService(
                     if (snapshot != null) {
                         for (doc in snapshot.documentChanges) {
                             val username = doc.document.getString("username") ?: doc.document.id
-                            val statusStr = doc.document.getString("status") ?: "ONLINE"
+                            val statusStr = doc.document.getString("status") ?: "OFFLINE"
                             val statusMsg = doc.document.getString("statusMessage") ?: ""
                             val presence = try {
                                 UserPresence.valueOf(statusStr)
                             } catch (e: Exception) {
-                                UserPresence.ONLINE
+                                UserPresence.OFFLINE
                             }
                             onPresenceChanged(username, presence, statusMsg)
                         }
@@ -414,36 +407,6 @@ class UzzapFirestoreService(
     // ==========================================
     // CHATROOMS SYNC
     // ==========================================
-
-    fun seedInitialRoomsIfEmpty(initialRooms: List<ChatroomEntity>) {
-        scope.launch(Dispatchers.IO) {
-            try {
-                val creatorUid = auth.currentUser?.uid ?: return@launch
-                val snapshot = firestore.collection(CHATROOMS_COLLECTION).limit(1).get().await()
-                if (snapshot.isEmpty) {
-                    Log.d(TAG, "Firestore chatrooms collection is empty. Seeding initial rooms...")
-                    val batch = firestore.batch()
-                    initialRooms.forEach { room ->
-                        val docRef = firestore.collection(CHATROOMS_COLLECTION).document(room.id)
-                        val data = hashMapOf<String, Any>(
-                            "id" to room.id,
-                            "name" to room.name,
-                            "topic" to room.topic,
-                            "category" to room.category,
-                            "chatterCount" to room.chatterCount,
-                            "createdByUid" to creatorUid,
-                            "createdAt" to System.currentTimeMillis()
-                        )
-                        batch.set(docRef, data, SetOptions.merge())
-                    }
-                    batch.commit().await()
-                    Log.d(TAG, "Successfully seeded ${initialRooms.size} chatrooms to Firestore.")
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Could not check/seed chatrooms: ${e.message}")
-            }
-        }
-    }
 
     fun listenToChatrooms(onRoomsUpdated: (List<ChatroomEntity>) -> Unit) {
         chatroomsListener?.remove()
@@ -468,7 +431,7 @@ class UzzapFirestoreService(
                                 category = category,
                                 chatterCount = chatterCount,
                                 isJoined = false,
-                                userRole = RoomRole.MEMBER
+                                userRole = RoomRole.GUEST
                             )
                         }
                         if (rooms.isNotEmpty()) {
@@ -495,48 +458,46 @@ class UzzapFirestoreService(
             "createdByUid" to creatorUid,
             "createdAt" to System.currentTimeMillis()
         )
-        firestore.collection(CHATROOMS_COLLECTION)
-            .document(room.id)
-            .set(data, SetOptions.merge())
+        val roomRef = firestore.collection(CHATROOMS_COLLECTION).document(room.id)
+        firestore.batch()
+            .set(roomRef, data)
+            .set(
+                roomRef.collection("members").document(creatorUid),
+                mapOf("authUid" to creatorUid, "joinedAt" to System.currentTimeMillis())
+            )
+            .commit()
             .await()
         Log.d(TAG, "Created room in Firestore: ${room.name}")
     }
 
-    suspend fun updateRoomChatterCount(roomId: String, delta: Int): Result<Unit> = cloudWrite(
-        failureMessage = "Failed updating chatter count"
-    ) {
-        firestore.collection(CHATROOMS_COLLECTION)
-            .document(roomId)
-            .update("chatterCount", FieldValue.increment(delta.toLong()))
-            .await()
-    }
-
-    suspend fun sendRoomMembershipChange(
-        roomId: String,
-        message: RoomMessageEntity,
-        chatterDelta: Int
-    ): Result<Unit> = cloudWrite(failureMessage = "Failed updating room membership") {
-        val senderUid = auth.currentUser?.uid
-            ?: throw IllegalStateException("Sign in before updating room membership.")
-        val messageData = hashMapOf<String, Any>(
-            "id" to message.id,
-            "roomId" to roomId,
-            "senderUsername" to message.senderUsername,
-            "senderUid" to senderUid,
-            "senderRole" to message.senderRole.name,
-            "message" to message.message,
-            "timestamp" to message.timestamp,
-            "isSystem" to message.isSystem
-        )
+    suspend fun updateRoomMembership(roomId: String, join: Boolean): Result<Boolean> = try {
+        val authUid = auth.currentUser?.uid
+            ?: return Result.failure(IllegalStateException("Sign in before changing room membership."))
         val roomRef = firestore.collection(CHATROOMS_COLLECTION).document(roomId)
-        firestore.batch()
-            .set(
-                roomRef.collection(ROOM_MESSAGES_SUBCOLLECTION).document(message.id),
-                messageData
-            )
-            .update(roomRef, "chatterCount", FieldValue.increment(chatterDelta.toLong()))
-            .commit()
-            .await()
+        val memberRef = roomRef.collection("members").document(authUid)
+        val alreadyJoined = memberRef.get().await().exists()
+        if (alreadyJoined == join) {
+            Result.success(false)
+        } else {
+            val batch = firestore.batch()
+            if (join) {
+                batch.set(
+                    memberRef,
+                    mapOf("authUid" to authUid, "joinedAt" to System.currentTimeMillis())
+                )
+                batch.update(roomRef, "chatterCount", FieldValue.increment(1))
+            } else {
+                batch.delete(memberRef)
+                batch.update(roomRef, "chatterCount", FieldValue.increment(-1))
+            }
+            batch.commit().await()
+            Result.success(true)
+        }
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Log.w(TAG, "Failed updating room membership: ${error.message}")
+        Result.failure(error)
     }
 
     suspend fun sendRoomMessage(roomId: String, message: RoomMessageEntity): Result<Unit> = cloudWrite(
@@ -764,17 +725,21 @@ class UzzapFirestoreService(
                                 isFromMe = false
                             )
                             onIncomingMessage(incomingMsg)
-
-                            // Clear processed inbox message document
-                            doc.reference.delete().addOnFailureListener { error ->
-                                Log.w(TAG, "Failed clearing processed inbox message ${doc.id}: ${error.message}")
-                            }
                         }
                     }
                 }
         } catch (e: Exception) {
             Log.w(TAG, "Error listening to inbox: ${e.message}")
         }
+    }
+
+    suspend fun acknowledgeInboxMessage(username: String, messageId: String) {
+        firestore.collection(USERS_COLLECTION)
+            .document(normalizeUsername(username))
+            .collection(INBOX_SUBCOLLECTION)
+            .document(messageId)
+            .delete()
+            .await()
     }
 
     // ==========================================
@@ -884,16 +849,16 @@ class UzzapFirestoreService(
                             else -> FriendRequestStatus.PENDING
                         }
                         onStatusChanged(username, state)
-                        if (state == FriendRequestStatus.DECLINED) {
-                            document.reference.delete().addOnFailureListener { deleteError ->
-                                Log.w(TAG, "Failed clearing declined friend request: ${deleteError.message}")
-                            }
-                        }
                     }
                 }
         } catch (e: Exception) {
             Log.w(TAG, "Error listening to outgoing friend requests: ${e.message}")
         }
+    }
+
+    suspend fun acknowledgeOutgoingFriendRequest(fromUsername: String, toUsername: String) {
+        val requestId = "${normalizeUsername(fromUsername)}_to_${normalizeUsername(toUsername)}"
+        firestore.collection(FRIEND_REQUESTS_COLLECTION).document(requestId).delete().await()
     }
 
     suspend fun submitReport(
@@ -920,6 +885,8 @@ class UzzapFirestoreService(
                 ?: return Result.failure(IllegalStateException("No authenticated account to delete."))
             val normalizedUsername = normalizeUsername(username)
             val userUid = currentUser.uid
+            val privateProfileRef = firestore.collection(USERS_COLLECTION).document(normalizedUsername)
+            val publicProfileRef = firestore.collection(PUBLIC_PROFILES_COLLECTION).document(normalizedUsername)
 
             if (password.isBlank()) {
                 return Result.failure(IllegalArgumentException("Enter your current password to delete your account."))
@@ -929,6 +896,8 @@ class UzzapFirestoreService(
                 password
             )
             currentUser.reauthenticate(credential).await()
+            val privateProfile = privateProfileRef.get().await().data
+            val publicProfile = publicProfileRef.get().await().data
 
             deleteMatchingDocuments(
                 firestore.collection(FRIEND_REQUESTS_COLLECTION).whereEqualTo("fromUid", userUid)
@@ -936,17 +905,6 @@ class UzzapFirestoreService(
             deleteMatchingDocuments(
                 firestore.collection(FRIEND_REQUESTS_COLLECTION).whereEqualTo("toUid", userUid)
             )
-
-            val conversations = firestore.collection(CONVERSATIONS_COLLECTION)
-                .whereArrayContains("participantUids", userUid)
-                .get()
-                .await()
-            conversations.documents.forEach { conversation ->
-                deleteMatchingDocuments(
-                    conversation.reference.collection(CONVO_MESSAGES_SUBCOLLECTION)
-                )
-                conversation.reference.delete().await()
-            }
 
             deleteMatchingDocuments(
                 firestore.collection(USERS_COLLECTION)
@@ -956,18 +914,32 @@ class UzzapFirestoreService(
             deleteMatchingDocuments(
                 firestore.collectionGroup(INBOX_SUBCOLLECTION).whereEqualTo("senderUid", userUid)
             )
+            // Both direct and room histories use a `messages` subcollection. Delete only
+            // documents authored by this account; a participant must never erase another
+            // person's copy of a shared history.
             deleteMatchingDocuments(
                 firestore.collectionGroup(ROOM_MESSAGES_SUBCOLLECTION).whereEqualTo("senderUid", userUid)
             )
             firestore.batch()
-                .delete(firestore.collection(USERS_COLLECTION).document(normalizedUsername))
-                .delete(firestore.collection(PUBLIC_PROFILES_COLLECTION).document(normalizedUsername))
+                .delete(privateProfileRef)
+                .delete(publicProfileRef)
                 .commit()
                 .await()
 
-            // Large histories may take long enough for Firebase's recent-login window to age.
-            currentUser.reauthenticate(credential).await()
-            currentUser.delete().await()
+            try {
+                currentUser.delete().await()
+            } catch (deleteError: Exception) {
+                // Keep authentication usable if Firebase rejects the final Auth deletion after
+                // Firestore cleanup. Without restoring the profile, the next login cannot map
+                // the still-existing account back to its username.
+                if (privateProfile != null || publicProfile != null) {
+                    val restore = firestore.batch()
+                    privateProfile?.let { restore.set(privateProfileRef, it) }
+                    publicProfile?.let { restore.set(publicProfileRef, it) }
+                    restore.commit().await()
+                }
+                throw deleteError
+            }
             auth.signOut()
             Result.success(Unit)
         } catch (e: CancellationException) {
@@ -1003,6 +975,7 @@ class UzzapFirestoreService(
         throw error
     } catch (error: Exception) {
         Log.w(TAG, "$failureMessage: ${error.message}")
+        _syncStatus.value = FirestoreSyncStatus.OFFLINE_CACHE
         Result.failure(error)
     }
 

@@ -24,23 +24,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gavel
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Policy
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.AlertDialog
@@ -90,17 +80,8 @@ import com.example.ui.theme.UzzapOrange
 fun SettingsScreen(
     profile: UserProfileEntity?,
     firestoreSyncStatus: FirestoreSyncStatus = FirestoreSyncStatus.CONNECTED,
-    notificationsEnabled: Boolean = true,
-    soundEffectsEnabled: Boolean = true,
-    enterKeySends: Boolean = true,
-    cloudPresenceSync: Boolean = true,
-    autoSaveHistory: Boolean = true,
     onToggleVibration: (Boolean) -> Unit = {},
-    onToggleNotifications: (Boolean) -> Unit = {},
-    onToggleSoundEffects: (Boolean) -> Unit = {},
-    onToggleEnterKeySends: (Boolean) -> Unit = {},
-    onToggleCloudPresenceSync: (Boolean) -> Unit = {},
-    onToggleAutoSaveHistory: (Boolean) -> Unit = {},
+    onClearChatCache: () -> Unit = {},
     onSyncNowClick: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
@@ -113,9 +94,6 @@ fun SettingsScreen(
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showCommunityGuidelinesDialog by remember { mutableStateOf(false) }
     var showClearCacheDialog by remember { mutableStateOf(false) }
-    var cacheClearedMessage by remember { mutableStateOf<String?>(null) }
-    var smsAlertsEnabled by remember { mutableStateOf(true) }
-    var presenceVisibility by remember { mutableStateOf(true) }
 
     LazyColumn(
         modifier = modifier
@@ -221,41 +199,6 @@ fun SettingsScreen(
                         testTag = "toggle_vibration"
                     )
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-
-                    // Push Notifications
-                    SettingSwitchItem(
-                        icon = Icons.Default.Notifications,
-                        title = "Push & Instant Notifications",
-                        subtitle = "Receive alerts when buddies message or invite to rooms",
-                        checked = notificationsEnabled,
-                        onCheckedChange = onToggleNotifications,
-                        testTag = "toggle_notifications"
-                    )
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-
-                    // Sound Effects
-                    SettingSwitchItem(
-                        icon = Icons.AutoMirrored.Filled.VolumeUp,
-                        title = "Retro Sound Effects & Buzzer",
-                        subtitle = "Play nostalgic UZZ-APP chime for incoming messages and BUZZ",
-                        checked = soundEffectsEnabled,
-                        onCheckedChange = onToggleSoundEffects,
-                        testTag = "toggle_sound"
-                    )
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-
-                    // SMS Fallback
-                    SettingSwitchItem(
-                        icon = Icons.Default.Phone,
-                        title = "SMS Fallback",
-                        subtitle = "Forward urgent buddy messages via SMS when offline",
-                        checked = smsAlertsEnabled,
-                        onCheckedChange = { smsAlertsEnabled = it },
-                        testTag = "toggle_sms_fallback"
-                    )
                 }
             }
         }
@@ -270,35 +213,13 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "CHAT & INTERFACE PREFERENCES",
+                        text = "LOCAL CHAT DATA",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 0.5.sp
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-
-                    SettingSwitchItem(
-                        icon = Icons.AutoMirrored.Filled.Send,
-                        title = "Enter Key Sends Message",
-                        subtitle = "Pressing enter on keyboard instantly sends your text",
-                        checked = enterKeySends,
-                        onCheckedChange = onToggleEnterKeySends,
-                        testTag = "toggle_enter_sends"
-                    )
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-
-                    SettingSwitchItem(
-                        icon = Icons.Default.Storage,
-                        title = "Offline Room DB Storage",
-                        subtitle = "Cache room messages and buddy chats locally for instant search",
-                        checked = autoSaveHistory,
-                        onCheckedChange = onToggleAutoSaveHistory,
-                        testTag = "toggle_local_cache"
-                    )
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
 
                     // Clear cache action
                     Row(
@@ -325,9 +246,9 @@ fun SettingsScreen(
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = cacheClearedMessage ?: "Free up local memory without deleting contacts",
+                                    text = "Remove local messages without deleting contacts",
                                     fontSize = 11.sp,
-                                    color = if (cacheClearedMessage != null) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -408,17 +329,6 @@ fun SettingsScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    SettingSwitchItem(
-                        icon = Icons.Default.CloudDone,
-                        title = "Broadcast Presence to Firestore",
-                        subtitle = "Send live Online/Away/Busy presence updates to cloud buddies",
-                        checked = cloudPresenceSync,
-                        onCheckedChange = onToggleCloudPresenceSync,
-                        testTag = "toggle_cloud_presence"
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
                     // Feature checklist
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         CloudFeatureItem("1-on-1 Direct Messaging & Classic BUZZ")
@@ -454,37 +364,6 @@ fun SettingsScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                }
-            }
-        }
-
-        // 5. Security & Privacy
-        item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "PRIVACY & SECURITY",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        letterSpacing = 0.5.sp
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    SettingSwitchItem(
-                        icon = Icons.Default.Security,
-                        title = "Show Presence to Buddies",
-                        subtitle = "Allow buddies to see when you are active on UZZ-APP",
-                        checked = presenceVisibility,
-                        onCheckedChange = { presenceVisibility = it },
-                        testTag = "toggle_presence_visibility"
-                    )
-
                 }
             }
         }
@@ -839,7 +718,7 @@ fun SettingsScreen(
                 Button(
                     onClick = {
                         showClearCacheDialog = false
-                        cacheClearedMessage = "Cache successfully cleared! (~4.2 MB freed)"
+                        onClearChatCache()
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = UzzapOrange,
@@ -892,7 +771,7 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "This action will:\n• Delete your user profile (@${profile?.username ?: "user"}) from Firebase Firestore\n• Remove shared cloud conversation history and your room messages\n• Erase messages, contacts, and preferences stored on this device\n• This action cannot be reversed.",
+                        text = "This action will:\n• Delete your user profile (@${profile?.username ?: "user"}) from Firebase Firestore\n• Remove messages you authored from cloud histories\n• Erase messages, contacts, and preferences stored on this device\n• This action cannot be reversed.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 17.sp

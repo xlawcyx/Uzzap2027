@@ -57,7 +57,6 @@ abstract class UzzapDatabase : RoomDatabase() {
                     "uzzap_database"
                 )
                     .addMigrations(MIGRATION_1_2)
-                    .addCallback(UzzapDatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
 
@@ -67,19 +66,6 @@ abstract class UzzapDatabase : RoomDatabase() {
                 }
 
                 instance
-            }
-        }
-
-        private class UzzapDatabaseCallback(
-            private val scope: CoroutineScope
-        ) : RoomDatabase.Callback() {
-            override fun onCreate(db: SupportSQLiteDatabase) {
-                super.onCreate(db)
-                INSTANCE?.let { database ->
-                    scope.launch(Dispatchers.IO) {
-                        ensurePhilippineRoomsInitialized(database)
-                    }
-                }
             }
         }
 
@@ -109,9 +95,7 @@ abstract class UzzapDatabase : RoomDatabase() {
 
             // 2. Migrate old mock data, then upsert the current official region catalog.
             // Existing join state and custom rooms are preserved.
-            val roomCount = chatroomDao.getChatroomCount()
             val hasOldLobby = chatroomDao.getChatroomById("room_lobby") != null
-            val isFreshCatalog = roomCount == 0 || hasOldLobby
 
             if (hasOldLobby) {
                 chatroomDao.deleteAllChatrooms()
@@ -124,18 +108,16 @@ abstract class UzzapDatabase : RoomDatabase() {
             PhilippineRegions.PROVINCES.forEachIndexed { index, province ->
                 val roomId = province.roomId
                 val existingRoom = chatroomDao.getChatroomById(roomId)
-                val isFirstJoined = isFreshCatalog && index == 0
-
                 rooms.add(
                     ChatroomEntity(
                         id = roomId,
                         name = province.roomTag,
                         topic = province.topic,
                         category = province.region,
-                        chatterCount = existingRoom?.chatterCount ?: if (isFirstJoined) 1 else 0,
-                        isJoined = existingRoom?.isJoined ?: isFirstJoined,
+                        chatterCount = existingRoom?.chatterCount ?: 0,
+                        isJoined = existingRoom?.isJoined ?: false,
                         userRole = existingRoom?.userRole
-                            ?: if (isFirstJoined) RoomRole.MEMBER else RoomRole.GUEST
+                            ?: RoomRole.GUEST
                     )
                 )
 
