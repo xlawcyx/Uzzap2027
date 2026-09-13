@@ -98,7 +98,7 @@ abstract class UzzapDatabase : RoomDatabase() {
                             displayName = "Juan Dela Cruz",
                             phoneNumber = "+63 918 555 1014",
                             status = UserPresence.ONLINE,
-                            statusMessage = "Mabuhay! Connecting on Uzzap \uD83C\uDDF5\uD83C\uDDED",
+                            statusMessage = "Mabuhay! Connecting on UZZ-APP \uD83C\uDDF5\uD83C\uDDED",
                             avatarEmoji = "\uD83D\uDE0E",
                             phoneVerified = true,
                             vibrationEnabled = true

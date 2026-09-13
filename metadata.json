@@ -1,5 +1,5 @@
 {
-  "name": "Uzzap",
+  "name": "UZZ-APP",
   "description": "Mobile messenger.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

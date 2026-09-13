@@ -113,7 +113,7 @@ fun LoginScreen(
     var signUpPassword by remember { mutableStateOf("") }
     var signUpPasswordVisible by remember { mutableStateOf(false) }
     var signUpAvatar by remember { mutableStateOf("😎") }
-    var signUpStatus by remember { mutableStateOf("Available on Uzzap! 🇵🇭") }
+    var signUpStatus by remember { mutableStateOf("Available on UZZ-APP! 🇵🇭") }
 
     // Local validation feedback
     var localError by remember { mutableStateOf<String?>(null) }
@@ -161,7 +161,7 @@ fun LoginScreen(
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_uzzap_logo),
-                        contentDescription = "Uzzap Logo",
+                        contentDescription = "UZZ-APP Logo",
                         modifier = Modifier
                             .size(64.dp)
                             .clip(RoundedCornerShape(14.dp))
@@ -172,7 +172,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "UZZAP",
+                text = "UZZ-APP",
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 2.sp,
@@ -207,7 +207,7 @@ fun LoginScreen(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (isCloudActive) "Firestore Cloud Active • uzzap2027" else "Uzzap MIDP 2.0 • Offline & Local Ready",
+                        text = if (isCloudActive) "Firestore Cloud Active • uzzap2027" else "UZZ-APP MIDP 2.0 • Offline & Local Ready",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (isCloudActive) Color(0xFF2E7D32) else UzzapOrange
@@ -357,7 +357,7 @@ fun LoginScreen(
                     // ------------------------------------
                     if (selectedTab == 0) {
                         Text(
-                            text = "Sign In to Uzzap",
+                            text = "Sign In to UZZ-APP",
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -495,7 +495,7 @@ fun LoginScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Sign In to Uzzap",
+                                    text = "Sign In to UZZ-APP",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -513,7 +513,7 @@ fun LoginScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Don't have an Uzzap account?",
+                                text = "Don't have a UZZ-APP account?",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -539,7 +539,7 @@ fun LoginScreen(
                     // ------------------------------------
                     if (selectedTab == 1) {
                         Text(
-                            text = "Create Uzzap Account",
+                            text = "Create UZZ-APP Account",
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -679,7 +679,7 @@ fun LoginScreen(
                                 }
                             },
                             supportingText = {
-                                Text("Used to sign in to your Uzzap account", fontSize = 11.sp)
+                                Text("Used to sign in to your UZZ-APP account", fontSize = 11.sp)
                             },
                             singleLine = true,
                             visualTransformation = if (signUpPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -763,7 +763,7 @@ fun LoginScreen(
                             value = signUpStatus,
                             onValueChange = { signUpStatus = it },
                             label = { Text("Status Message") },
-                            placeholder = { Text("Available on Uzzap! 🇵🇭") },
+                            placeholder = { Text("Available on UZZ-APP! 🇵🇭") },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.ChatBubbleOutline,

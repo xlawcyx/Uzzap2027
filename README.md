@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="app/src/main/res/drawable-nodpi/ic_uzzap_logo.jpg" alt="Uzzap logo" width="128" />
-  <h1>Uzzap</h1>
+  <img src="app/src/main/res/drawable-nodpi/ic_uzzap_logo.jpg" alt="UZZ-APP logo" width="128" />
+  <h1>UZZ-APP</h1>
   <p><strong>A modern Android instant messenger for conversations, communities, and connections.</strong></p>
   <p>
     <a href="https://developer.android.com/"><img src="https://img.shields.io/badge/Android-API_24%2B-3DDC84?logo=android&amp;logoColor=white" alt="Android API 24+" /></a>
@@ -12,7 +12,7 @@
 
 ---
 
-Uzzap is a Compose-powered Android messenger built for meaningful conversations and regional communities. Connect with friends, discover Philippine chatrooms, and keep your conversations available across devices through Firebase-backed sync.
+UZZ-APP is a Compose-powered Android messenger built for meaningful conversations and regional communities. Connect with friends, discover Philippine chatrooms, and keep your conversations available across devices through Firebase-backed sync.
 
 > A focused social messaging experience with local-first data, real-time cloud services, and a clean Material 3 interface.
 
@@ -65,7 +65,7 @@ Firebase-backed sign-in and messaging need an Android Firebase project:
 3. Place it at `app/google-services.json`.
 4. Enable Authentication and Cloud Firestore.
 
-Enable the Firebase Authentication **Email/Password** provider. Uzzap maps normalized usernames
+Enable the Firebase Authentication **Email/Password** provider. UZZ-APP maps normalized usernames
 to internal Firebase Auth email identifiers; passwords are handled by Firebase Authentication and
 must never be stored in Firestore.
 
@@ -139,7 +139,7 @@ Firestore security rules and indexes live in [`firestore.rules`](firestore.rules
 
 ## Release checklist
 
-Before publishing Uzzap to Google Play, verify the following:
+Before publishing UZZ-APP to Google Play, verify the following:
 
 - [ ] Production `google-services.json` is configured securely.
 - [ ] Release signing credentials are stored outside the repository.

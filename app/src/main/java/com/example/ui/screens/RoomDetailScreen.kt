@@ -79,7 +79,7 @@ import com.example.data.model.RoomRole
 import com.example.ui.components.ClassicEmoticonMessage
 import com.example.ui.components.ClassicEmoticonPicker
 import com.example.ui.components.appendClassicEmoticon
-import com.example.ui.theme.UzzapOrange
+import com.example.ui.theme.UZZ-APPOrange
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -154,7 +154,7 @@ fun RoomDetailScreen(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(UzzapOrange),
+                        .background(UZZ-APPOrange),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -213,7 +213,7 @@ fun RoomDetailScreen(
                     } else {
                         Button(
                             onClick = { onToggleJoin(true) },
-                            colors = ButtonDefaults.buttonColors(containerColor = UzzapOrange),
+                            colors = ButtonDefaults.buttonColors(containerColor = UZZ-APPOrange),
                             shape = RoundedCornerShape(8.dp),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                             modifier = Modifier.testTag("room_detail_join_button")
@@ -287,7 +287,7 @@ fun RoomDetailScreen(
                         text = "Topic: ",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = UzzapOrange
+                        color = UZZ-APPOrange
                     )
                     Text(
                         text = room.topic,
@@ -308,7 +308,7 @@ fun RoomDetailScreen(
                 shrinkVertically(tween(180, easing = FastOutSlowInEasing))
         ) {
             Surface(
-                color = UzzapOrange.copy(alpha = 0.12f),
+                color = UZZ-APPOrange.copy(alpha = 0.12f),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -328,7 +328,7 @@ fun RoomDetailScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = { onToggleJoin?.invoke(true) },
-                        colors = ButtonDefaults.buttonColors(containerColor = UzzapOrange),
+                        colors = ButtonDefaults.buttonColors(containerColor = UZZ-APPOrange),
                         shape = RoundedCornerShape(6.dp),
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                         modifier = Modifier.height(28.dp)
@@ -371,7 +371,7 @@ fun RoomDetailScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Say hello or send a classic Uzzap emoticon.",
+                            text = "Say hello or send a classic UZZ-APP emoticon.",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
                         )
@@ -428,7 +428,7 @@ fun RoomDetailScreen(
                         imageVector = Icons.Default.EmojiEmotions,
                         contentDescription = "Classic emoticons",
                         tint = if (showEmoticons) {
-                            UzzapOrange
+                            UZZ-APPOrange
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         }
@@ -449,7 +449,7 @@ fun RoomDetailScreen(
                     maxLines = 3,
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = UzzapOrange,
+                        focusedBorderColor = UZZ-APPOrange,
                         unfocusedBorderColor = Color.Transparent,
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                         unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -479,7 +479,7 @@ fun RoomDetailScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(if (inputText.isNotBlank()) UzzapOrange else Color.LightGray)
+                        .background(if (inputText.isNotBlank()) UZZ-APPOrange else Color.LightGray)
                         .testTag("send_room_message_button")
                 ) {
                     Icon(
@@ -514,7 +514,7 @@ fun RoomDetailScreen(
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            text = "Help keep Uzzap chatrooms safe. Reports are reviewed by human moderators in compliance with Google Play & App Store policies.",
+                            text = "Help keep UZZ-APP chatrooms safe. Reports are reviewed by human moderators in compliance with Google Play & App Store policies.",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -538,8 +538,8 @@ fun RoomDetailScreen(
                                     onClick = { reportRoomReason = reason },
                                     label = { Text(reason, fontSize = 12.sp) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = UzzapOrange.copy(alpha = 0.2f),
-                                        selectedLabelColor = UzzapOrange
+                                        selectedContainerColor = UZZ-APPOrange.copy(alpha = 0.2f),
+                                        selectedLabelColor = UZZ-APPOrange
                                     ),
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -596,7 +596,7 @@ fun RoomDetailScreen(
                 confirmButton = {
                     Button(
                         onClick = { reportRoomSubmitted = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = UzzapOrange)
+                        colors = ButtonDefaults.buttonColors(containerColor = UZZ-APPOrange)
                     ) {
                         Text("OK")
                     }
@@ -639,7 +639,7 @@ fun RoomMessageItem(
         val iconTint = when {
             isJoin -> Color(0xFF2E7D32)
             isLeave -> Color(0xFFC62828)
-            else -> UzzapOrange
+            else -> UZZ-APPOrange
         }
 
         val iconVector = when {
@@ -715,20 +715,20 @@ fun RoomMessageItem(
                     text = message.senderUsername,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = UzzapOrange
+                    color = UZZ-APPOrange
                 )
 
                 if (message.senderRole != RoomRole.MEMBER) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Surface(
-                        color = UzzapOrange.copy(alpha = 0.18f),
+                        color = UZZ-APPOrange.copy(alpha = 0.18f),
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
                             text = message.senderRole.title,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            color = UzzapOrange,
+                            color = UZZ-APPOrange,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                         )
                     }

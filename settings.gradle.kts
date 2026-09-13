@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Uzzap"
+rootProject.name = "UZZ-APP"
 
 include(":app")

@@ -54,7 +54,7 @@ data class UserProfileEntity(
     val displayName: String = "Juan Dela Cruz",
     val phoneNumber: String = "+63 918 555 1014",
     val status: UserPresence = UserPresence.ONLINE,
-    val statusMessage: String = "Chatting on Uzzap v1.0.14 \uD83D\uDCF1",
+    val statusMessage: String = "Chatting on UZZ-APP v1.0.14 \uD83D\uDCF1",
     val avatarEmoji: String = "\uD83D\uDE0E",
     val phoneVerified: Boolean = true,
     val vibrationEnabled: Boolean = true
