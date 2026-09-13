@@ -75,9 +75,9 @@ import com.example.ui.theme.PresenceAway
 import com.example.ui.theme.PresenceBusy
 import com.example.ui.theme.PresenceOffline
 import com.example.ui.theme.PresenceOnline
-import com.example.ui.theme.UZZ-APPCyan
-import com.example.ui.theme.UZZ-APPNavy
-import com.example.ui.theme.UZZ-APPOrange
+import com.example.ui.theme.UzzapCyan
+import com.example.ui.theme.UzzapNavy
+import com.example.ui.theme.UzzapOrange
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -135,7 +135,7 @@ fun PresenceDot(
 }
 
 @Composable
-fun UZZ-APPAvatar(
+fun UzzapAvatar(
     emoji: String,
     bgColor: Long,
     presence: UserPresence? = null,
@@ -173,7 +173,7 @@ fun UZZ-APPAvatar(
 }
 
 @Composable
-fun UZZ-APPTopHeader(
+fun UzzapTopHeader(
     profile: UserProfileEntity?,
     onPresenceClick: () -> Unit,
     syncStatus: FirestoreSyncStatus = FirestoreSyncStatus.CONNECTED,
@@ -191,7 +191,7 @@ fun UZZ-APPTopHeader(
                     .fillMaxWidth()
                     .padding(
                         horizontal = if (compactHeader) 10.dp else 16.dp,
-                        vertical = 8.dp
+                        vertical = 10.dp
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -204,7 +204,7 @@ fun UZZ-APPTopHeader(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(UZZ-APPOrange),
+                            .background(UzzapOrange),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -218,7 +218,7 @@ fun UZZ-APPTopHeader(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "UZZ-APP",
+                                text = "uzzap",
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -227,12 +227,12 @@ fun UZZ-APPTopHeader(
                             if (!compactHeader) {
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Surface(
-                                    color = UZZ-APPOrange.copy(alpha = 0.18f),
+                                    color = UzzapOrange.copy(alpha = 0.18f),
                                     shape = RoundedCornerShape(6.dp)
                                 ) {
                                     Text(
-                                        text = "1.0",
-                                        color = UZZ-APPOrange,
+                                        text = "1.0.14",
+                                        color = UzzapOrange,
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
@@ -277,7 +277,15 @@ fun UZZ-APPTopHeader(
                                     syncStatusContentColor(syncStatus)
                                 )
                         )
-
+                        if (!compactHeader) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Cloud",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = syncStatusContentColor(syncStatus)
+                            )
+                        }
                     }
                 }
 
@@ -357,7 +365,7 @@ fun PresenceSelectorDialog(
                     Surface(
                         onClick = { selectedPresence = presence },
                         color = if (selectedPresence == presence) {
-                            UZZ-APPOrange.copy(alpha = 0.15f)
+                            UzzapOrange.copy(alpha = 0.15f)
                         } else Color.Transparent,
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
@@ -395,7 +403,7 @@ fun PresenceSelectorDialog(
                     placeholder = { Text("What's on your mind?") },
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = UZZ-APPOrange
+                        focusedBorderColor = UzzapOrange
                     )
                 )
             }
@@ -403,7 +411,7 @@ fun PresenceSelectorDialog(
         confirmButton = {
             Button(
                 onClick = { onSave(selectedPresence, statusMessage) },
-                colors = ButtonDefaults.buttonColors(containerColor = UZZ-APPOrange),
+                colors = ButtonDefaults.buttonColors(containerColor = UzzapOrange),
                 modifier = Modifier.testTag("save_presence_button")
             ) {
                 Text("Update")
@@ -445,7 +453,7 @@ fun AddContactDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UZZ-APPOrange)
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UzzapOrange)
                 )
 
                 OutlinedTextField(
@@ -456,7 +464,7 @@ fun AddContactDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UZZ-APPOrange)
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UzzapOrange)
                 )
 
                 OutlinedTextField(
@@ -468,7 +476,7 @@ fun AddContactDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UZZ-APPOrange)
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UzzapOrange)
                 )
 
                 Text(
@@ -485,7 +493,7 @@ fun AddContactDialog(
                     listOf(ContactCategory.BUDDIES, ContactCategory.CHATTERBOX, ContactCategory.MOST_FREQUENT).forEach { cat ->
                         Surface(
                             onClick = { selectedCategory = cat },
-                            color = if (selectedCategory == cat) UZZ-APPOrange else MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (selectedCategory == cat) UzzapOrange else MaterialTheme.colorScheme.surfaceVariant,
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -516,7 +524,7 @@ fun AddContactDialog(
                     }
                 },
                 enabled = username.length >= 3,
-                colors = ButtonDefaults.buttonColors(containerColor = UZZ-APPOrange),
+                colors = ButtonDefaults.buttonColors(containerColor = UzzapOrange),
                 modifier = Modifier.testTag("submit_add_contact")
             ) {
                 Text("Add Buddy")
@@ -558,7 +566,7 @@ fun CreateRoomDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UZZ-APPOrange)
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UzzapOrange)
                 )
 
                 OutlinedTextField(
@@ -569,7 +577,7 @@ fun CreateRoomDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UZZ-APPOrange)
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UzzapOrange)
                 )
 
                 Text(
@@ -588,7 +596,7 @@ fun CreateRoomDialog(
                         val isSelected = category == reg
                         Surface(
                             onClick = { category = reg },
-                            color = if (isSelected) UZZ-APPOrange else MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (isSelected) UzzapOrange else MaterialTheme.colorScheme.surfaceVariant,
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
@@ -612,7 +620,7 @@ fun CreateRoomDialog(
                     }
                 },
                 enabled = name.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = UZZ-APPOrange),
+                colors = ButtonDefaults.buttonColors(containerColor = UzzapOrange),
                 modifier = Modifier.testTag("submit_create_room")
             ) {
                 Text("Create Room")

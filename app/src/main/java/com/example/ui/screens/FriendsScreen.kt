@@ -57,8 +57,8 @@ import com.example.data.model.ContactEntity
 import com.example.data.model.UserPresence
 import com.example.ui.components.EmptyListState
 import com.example.ui.components.RefreshableScreen
-import com.example.ui.components.UZZ-APPAvatar
-import com.example.ui.theme.UZZ-APPOrange
+import com.example.ui.components.UzzapAvatar
+import com.example.ui.theme.UzzapOrange
 
 @Composable
 fun FriendsScreen(
@@ -137,7 +137,7 @@ fun FriendsScreen(
                     singleLine = true,
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = UZZ-APPOrange,
+                        focusedBorderColor = UzzapOrange,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                         focusedContainerColor = MaterialTheme.colorScheme.surface,
                         unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -170,7 +170,7 @@ fun FriendsScreen(
                         Surface(
                             onClick = { onCategoryChange(category) },
                             shape = RoundedCornerShape(16.dp),
-                            color = if (isSelected) UZZ-APPOrange else MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (isSelected) UzzapOrange else MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier.testTag("filter_$category")
                         ) {
                             Row(
@@ -189,14 +189,14 @@ fun FriendsScreen(
                                     Box(
                                         modifier = Modifier
                                             .clip(CircleShape)
-                                            .background(if (isSelected) Color.White else UZZ-APPOrange)
+                                            .background(if (isSelected) Color.White else UzzapOrange)
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
                                             text = "$pendingCount",
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isSelected) UZZ-APPOrange else Color.White
+                                            color = if (isSelected) UzzapOrange else Color.White
                                         )
                                     }
                                 }
@@ -221,7 +221,7 @@ fun FriendsScreen(
                             Icon(
                                 imageVector = Icons.Default.PersonAdd,
                                 contentDescription = null,
-                                tint = UZZ-APPOrange,
+                                tint = UzzapOrange,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -229,7 +229,7 @@ fun FriendsScreen(
                                 text = "Friend Requests (${pendingRequests.size})",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = UZZ-APPOrange
+                                color = UzzapOrange
                             )
                         }
 
@@ -304,7 +304,7 @@ fun FriendsScreen(
         // Add Buddy FAB
         FloatingActionButton(
             onClick = onAddContactClick,
-            containerColor = UZZ-APPOrange,
+            containerColor = UzzapOrange,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -343,7 +343,7 @@ fun ContactRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Avatar with presence
-            UZZ-APPAvatar(
+            UzzapAvatar(
                 emoji = contact.avatarEmoji,
                 bgColor = contact.avatarBgColor,
                 presence = contact.presence,
@@ -402,7 +402,7 @@ fun ContactRow(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Chat,
                     contentDescription = "Chat with ${contact.displayName}",
-                    tint = UZZ-APPOrange,
+                    tint = UzzapOrange,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -418,7 +418,7 @@ fun FriendRequestCard(
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, UZZ-APPOrange.copy(alpha = 0.35f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, UzzapOrange.copy(alpha = 0.35f)),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -428,7 +428,7 @@ fun FriendRequestCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            UZZ-APPAvatar(
+            UzzapAvatar(
                 emoji = request.avatarEmoji,
                 bgColor = request.avatarBgColor,
                 size = 40

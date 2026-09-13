@@ -80,15 +80,15 @@ import com.example.data.model.UserPresence
 import com.example.data.model.UserProfileEntity
 import com.example.data.remote.firestore.FirestoreSyncStatus
 import com.example.ui.components.PresenceDot
-import com.example.ui.components.UZZ-APPAvatar
+import com.example.ui.components.UzzapAvatar
 import com.example.ui.components.syncStatusContainerColor
 import com.example.ui.components.syncStatusContentColor
 import com.example.ui.theme.PresenceAway
 import com.example.ui.theme.PresenceBusy
 import com.example.ui.theme.PresenceOffline
 import com.example.ui.theme.PresenceOnline
-import com.example.ui.theme.UZZ-APPCyan
-import com.example.ui.theme.UZZ-APPOrange
+import com.example.ui.theme.UzzapCyan
+import com.example.ui.theme.UzzapOrange
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -134,7 +134,7 @@ fun ProfileScreen(
                 ) {
                     // Avatar with Presence & Edit Indicator
                     Box(contentAlignment = Alignment.BottomEnd) {
-                        UZZ-APPAvatar(
+                        UzzapAvatar(
                             emoji = profile?.avatarEmoji ?: "😎",
                             bgColor = 0xFFFF5722,
                             presence = profile?.status ?: UserPresence.ONLINE,
@@ -150,7 +150,7 @@ fun ProfileScreen(
                         ) {
                             Surface(
                                 shape = CircleShape,
-                                color = UZZ-APPOrange,
+                                color = UzzapOrange,
                                 modifier = Modifier.size(28.dp)
                             ) {
                                 Icon(
@@ -248,7 +248,7 @@ fun ProfileScreen(
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit Status",
-                                tint = UZZ-APPOrange,
+                                tint = UzzapOrange,
                                 modifier = Modifier.size(14.dp)
                             )
                         }
@@ -264,7 +264,7 @@ fun ProfileScreen(
                         Button(
                             onClick = { showEditProfileDialog = true },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = UZZ-APPOrange,
+                                containerColor = UzzapOrange,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
                             shape = RoundedCornerShape(12.dp),
@@ -298,7 +298,7 @@ fun ProfileScreen(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
-                                tint = UZZ-APPOrange
+                                tint = UzzapOrange
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Settings", fontWeight = FontWeight.Bold, fontSize = 13.sp)
@@ -414,7 +414,7 @@ fun ProfileScreen(
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, UZZ-APPCyan.copy(alpha = 0.5f)),
+                border = BorderStroke(1.dp, UzzapCyan.copy(alpha = 0.5f)),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -429,7 +429,7 @@ fun ProfileScreen(
                             Icon(
                                 imageVector = Icons.Default.CloudDone,
                                 contentDescription = null,
-                                tint = UZZ-APPCyan,
+                                tint = UzzapCyan,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -494,7 +494,7 @@ fun ProfileScreen(
                             .testTag("profile_sync_cloud_button"),
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = UZZ-APPCyan,
+                            containerColor = UzzapCyan,
                             contentColor = Color.White
                         )
                     ) {
@@ -536,7 +536,7 @@ fun ProfileScreen(
                             icon = Icons.Default.MilitaryTech,
                             title = "UZZ-APP OG",
                             subtitle = "Kolipri Era",
-                            color = UZZ-APPOrange,
+                            color = UzzapOrange,
                             modifier = Modifier.weight(1f)
                         )
                         BadgePill(
@@ -565,7 +565,7 @@ fun ProfileScreen(
                             icon = Icons.Default.Public,
                             title = "Pinoy Chatter",
                             subtitle = "Philippines",
-                            color = UZZ-APPCyan,
+                            color = UzzapCyan,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -599,7 +599,7 @@ fun ProfileScreen(
                             onClick = onBrowseRooms,
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("Browse All", fontSize = 12.sp, color = UZZ-APPOrange, fontWeight = FontWeight.Bold)
+                            Text("Browse All", fontSize = 12.sp, color = UzzapOrange, fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -623,7 +623,7 @@ fun ProfileScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Button(
                                     onClick = onBrowseRooms,
-                                    colors = ButtonDefaults.buttonColors(containerColor = UZZ-APPOrange),
+                                    colors = ButtonDefaults.buttonColors(containerColor = UzzapOrange),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.height(36.dp)
                                 ) {
@@ -649,7 +649,7 @@ fun ProfileScreen(
                                             Icon(
                                                 imageVector = Icons.Default.Tag,
                                                 contentDescription = null,
-                                                tint = UZZ-APPOrange,
+                                                tint = UzzapOrange,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
@@ -671,7 +671,7 @@ fun ProfileScreen(
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                             contentDescription = "Open Room",
-                                            tint = UZZ-APPOrange,
+                                            tint = UzzapOrange,
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
@@ -710,13 +710,13 @@ fun ProfileScreen(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(UZZ-APPOrange.copy(alpha = 0.15f)),
+                                .background(UzzapOrange.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = null,
-                                tint = UZZ-APPOrange,
+                                tint = UzzapOrange,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -741,7 +741,7 @@ fun ProfileScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = "Go to Settings",
-                        tint = UZZ-APPOrange,
+                        tint = UzzapOrange,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -773,7 +773,7 @@ fun ProfileScreen(
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = null,
-                    tint = UZZ-APPOrange,
+                    tint = UzzapOrange,
                     modifier = Modifier.size(28.dp)
                 )
             },
@@ -802,8 +802,8 @@ fun ProfileScreen(
                                 Surface(
                                     onClick = { editEmoji = emoji },
                                     shape = CircleShape,
-                                    color = if (editEmoji == emoji) UZZ-APPOrange.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant,
-                                    border = if (editEmoji == emoji) BorderStroke(2.dp, UZZ-APPOrange) else null,
+                                    color = if (editEmoji == emoji) UzzapOrange.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant,
+                                    border = if (editEmoji == emoji) BorderStroke(2.dp, UzzapOrange) else null,
                                     modifier = Modifier.size(36.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -851,8 +851,8 @@ fun ProfileScreen(
                                 Surface(
                                     onClick = { editStatus = suggestion },
                                     shape = RoundedCornerShape(12.dp),
-                                    color = if (editStatus == suggestion) UZZ-APPOrange.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
-                                    border = if (editStatus == suggestion) BorderStroke(1.dp, UZZ-APPOrange) else null
+                                    color = if (editStatus == suggestion) UzzapOrange.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
+                                    border = if (editStatus == suggestion) BorderStroke(1.dp, UzzapOrange) else null
                                 ) {
                                     Text(
                                         text = suggestion,
@@ -882,7 +882,7 @@ fun ProfileScreen(
                         onUpdateProfile(editName, editStatus, editEmoji, editPhone)
                         showEditProfileDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = UZZ-APPOrange),
+                    colors = ButtonDefaults.buttonColors(containerColor = UzzapOrange),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.testTag("save_profile_button")
                 ) {
@@ -918,8 +918,8 @@ private fun PresenceChip(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
-        color = if (isSelected) UZZ-APPOrange.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
-        border = if (isSelected) BorderStroke(1.5.dp, UZZ-APPOrange) else null,
+        color = if (isSelected) UzzapOrange.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+        border = if (isSelected) BorderStroke(1.5.dp, UzzapOrange) else null,
         modifier = Modifier.testTag("presence_chip_${presence.name.lowercase()}")
     ) {
         Row(
@@ -937,7 +937,7 @@ private fun PresenceChip(
                 text = label,
                 fontSize = 12.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) UZZ-APPOrange else MaterialTheme.colorScheme.onSurface
+                color = if (isSelected) UzzapOrange else MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -1015,7 +1015,7 @@ fun StatCard(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = UZZ-APPOrange,
+                tint = UzzapOrange,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.height(4.dp))
