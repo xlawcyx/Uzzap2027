@@ -797,17 +797,39 @@ class UzzapFirestoreService(
         return try {
             val currentUser = auth.currentUser
                 ?: return Result.failure(IllegalStateException("No authenticated account to delete."))
+            val normalizedUsername = normalizeUsername(username)
+            val userUid = currentUser.uid
+
+            deleteMatchingDocuments(
+                firestore.collection(FRIEND_REQUESTS_COLLECTION).whereEqualTo("senderUid", userUid)
+            )
+            deleteMatchingDocuments(
+                firestore.collection(FRIEND_REQUESTS_COLLECTION).whereEqualTo("recipientUid", userUid)
+            )
+            deleteMatchingDocuments(
+                firestore.collection(CONVERSATIONS_COLLECTION).whereArrayContains("participantUids", userUid)
+            )
             firestore.batch()
-                .delete(firestore.collection(USERS_COLLECTION).document(username))
-                .delete(firestore.collection(PUBLIC_PROFILES_COLLECTION).document(username))
+                .delete(firestore.collection(USERS_COLLECTION).document(normalizedUsername))
+                .delete(firestore.collection(PUBLIC_PROFILES_COLLECTION).document(normalizedUsername))
                 .commit()
                 .await()
+
             currentUser.delete().await()
+            auth.signOut()
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error deleting user cloud data", e)
             Result.failure(e)
         }
+    }
+
+    private suspend fun deleteMatchingDocuments(query: Query) {
+        val snapshot = query.get().await()
+        if (snapshot.isEmpty) return
+        val batch = firestore.batch()
+        snapshot.documents.forEach { document -> batch.delete(document.reference) }
+        batch.commit().await()
     }
 
     fun cleanUp() {
